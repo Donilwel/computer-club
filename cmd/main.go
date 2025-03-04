@@ -1,29 +1,47 @@
 package main
 
 import (
-  "computer-club/internal/auth"
-  "computer-club/internal/config"
-  "computer-club/internal/logger"
-  "google.golang.org/grpc"
-  "net"
+	"database/sql"
+	"fmt"
+	"log"
+	"net"
+	"time"
+
+	"computer-club/config"
+	"computer-club/internal/repository"
+	"computer-club/internal/service"
+	"computer-club/internal/transport"
+	pb "computer-club/proto/auth"
+
+	_ "github.com/lib/pq"
+	"google.golang.org/grpc"
 )
 
 func main() {
-	cfg, _ := config.LoadConfig()
-	log := logger.InitLogger(cfg.Log.Level, cfg.Log.File)
+	cfg, err := config.LoadConfig("config/config.yaml")
+	if err != nil {
+		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
+	}
 
-	db, _ := database.ConnectDB(cfg)
-	_ = db.AutoMigrate(&auth.User{})
+	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Database.Host, cfg.Database.Port, cfg.Database.User, cfg.Database.Password, cfg.Database.DBName))
+	if err != nil {
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+	}
 
-	authService := auth.NewAuthService(db, cfg.JWT.Secret, log)
+	repo := repository.NewAuthRepository(db)
+	authService := service.NewAuthService(repo, cfg.JWT.Secret, time.Hour*time.Duration(cfg.JWT.ExpirationHours))
+	grpcServer := grpc.NewServer()
 
-	server := grpc.NewServer()
-	pb.RegisterAuthServiceServer(server, authService)
+	pb.RegisterAuthServiceServer(grpcServer, transport.NewAuthServer(authService))
 
-	listener, _ := net.Listen("tcp", ":50051")
-	log.Info("gRPC сервер запущен на порту 50051")
+	listener, err := net.Listen("tcp", ":"+cfg.Server.Port)
+	if err != nil {
+		log.Fatalf("Ошибка запуска сервера: %v", err)
+	}
 
-	if err := server.Serve(listener); err != nil {
-		log.Fatal(err)
+	log.Println("gRPC сервер запущен на порту", cfg.Server.Port)
+	if err := grpcServer.Serve(listener); err != nil {
+		log.Fatalf("Ошибка запуска gRPC: %v", err)
 	}
 }

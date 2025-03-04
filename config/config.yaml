@@ -1,18 +1,13 @@
 server:
-  port: 50051
+  port: "50051"
 
 database:
-  host: localhost
-  port: 5432
-  user: admin
-  password: 123456
-  dbname: clubdb
-  sslmode: disable
+  host: "localhost"
+  port: "5432"
+  user: "postgres"
+  password: "password"
+  dbname: "computer_club"
 
 jwt:
   secret: "supersecretkey"
-  expire_hours: 24
-
-log:
-  level: "info"
-  file: "logs/app.log"
+  expiration_hours: 24
