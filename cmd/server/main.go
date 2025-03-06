@@ -1,6 +1,7 @@
 package main
 
 import (
+	"computer-club/internal/logger"
 	"fmt"
 	"net/http"
 
@@ -9,12 +10,11 @@ import (
 	"computer-club/internal/repository"
 	"computer-club/internal/usecase"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
 	cfg := config.LoadConfig()
-
+	log := logger.NewLogger()
 	// Подключаемся к БД и Redis
 	db := repository.NewPostgresDB(cfg)
 	redisClient := repository.NewRedisClient(cfg)
@@ -29,9 +29,9 @@ func main() {
 	clubService := usecase.NewClubUsecase(userRepo, sessionRepo, computerRepo)
 
 	// Запускаем HTTP сервер
-	handler := httpService.NewHandler(clubService)
+	handler := httpService.NewHandler(clubService, log)
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(logger.LoggerMiddleware(log))
 	handler.RegisterRoutes(r)
 
 	fmt.Println("Server started on :", cfg.ServerPort)

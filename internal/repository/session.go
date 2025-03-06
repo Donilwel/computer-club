@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type SessionRepository interface {
 type PostgresSessionRepo struct {
 	db    *gorm.DB
 	redis *redis.Client
+	mu    sync.Mutex
 }
 
 func NewPostgresSessionRepo(db *gorm.DB, redis *redis.Client) SessionRepository {
@@ -27,6 +29,8 @@ func NewPostgresSessionRepo(db *gorm.DB, redis *redis.Client) SessionRepository 
 }
 
 func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int) (*models.Session, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	// Проверяем, существует ли этот ПК
 	var computer models.Computer
 	if err := r.db.Where("pc_number = ?", pcNumber).First(&computer).Error; err != nil {
@@ -60,6 +64,8 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int) (*models.
 }
 
 func (r *PostgresSessionRepo) EndSession(sessionID int64) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	// Находим сессию
 	var session models.Session
 	if err := r.db.Where("id = ?", sessionID).First(&session).Error; err != nil {

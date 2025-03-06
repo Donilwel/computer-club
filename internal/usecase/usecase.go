@@ -1,9 +1,9 @@
 package usecase
 
 import (
+	"computer-club/internal/errors"
 	"computer-club/internal/models"
 	"computer-club/internal/repository"
-	"fmt"
 )
 
 type ClubService interface {
@@ -40,7 +40,7 @@ func (u *ClubUsecase) StartSession(userID int64, pcNumber int) (*models.Session,
 	// Проверяем, существует ли пользователь
 	_, err := u.userRepo.GetUserByID(userID)
 	if err != nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, errors.ErrUserNotFound
 	}
 
 	return u.sessionRepo.StartSession(userID, pcNumber)
