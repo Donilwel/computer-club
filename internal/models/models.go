@@ -12,10 +12,11 @@ const (
 
 // User - модель пользователя
 type User struct {
-	ID      int64     `json:"id"`
-	Name    string    `json:"name"`
-	Role    UserRole  `json:"role"`
-	Created time.Time `json:"created_at"`
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	Role     string `json:"role"`
+	Email    string `json:"email"`
+	Password string `json:"-"`
 }
 
 // Session - модель сессии компьютера

@@ -2,6 +2,7 @@ package main
 
 import (
 	"computer-club/internal/logger"
+	"computer-club/internal/middleware"
 	"fmt"
 	"net/http"
 
@@ -31,7 +32,7 @@ func main() {
 	// Запускаем HTTP сервер
 	handler := httpService.NewHandler(clubService, log)
 	r := chi.NewRouter()
-	r.Use(logger.LoggerMiddleware(log))
+	r.Use(middleware.LoggerMiddleware(log))
 	handler.RegisterRoutes(r)
 
 	fmt.Println("Server started on :", cfg.ServerPort)

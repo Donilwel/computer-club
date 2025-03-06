@@ -2,13 +2,13 @@ package httpService
 
 import (
 	"computer-club/internal/errors"
+	"computer-club/internal/middleware"
 	"computer-club/internal/models"
 	"computer-club/internal/usecase"
 	"encoding/json"
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
+	"net/http"
 )
 
 type Handler struct {
@@ -24,10 +24,14 @@ func NewHandler(clubService usecase.ClubService, log *logrus.Logger) *Handler {
 // RegisterRoutes регистрирует эндпоинты
 func (h *Handler) RegisterRoutes(r *chi.Mux) {
 	r.Post("/register", h.RegisterUser)
-	r.Post("/session/start", h.StartSession)
-	r.Post("/session/end", h.EndSession)
-	r.Get("/sessions/active", h.GetActiveSessions)
-	r.Get("/computers/status", h.GetComputersStatus)
+	r.Post("/login", h.LoginUser)
+	r.Group(func(protected chi.Router) {
+		protected.Use(middleware.AuthMiddleware)
+		protected.Post("/session/start", h.StartSession)
+		protected.Post("/session/end", h.EndSession)
+		protected.Get("/sessions/active", h.GetActiveSessions)
+		protected.Get("/computers/status", h.GetComputersStatus)
+	})
 }
 
 // RegisterUser регистрирует нового пользователя
@@ -35,26 +39,35 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Запрос на регистрацию пользователя")
 
 	var req struct {
-		Name string `json:"name"`
-		Role string `json:"role"`
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		Role     string `json:"role"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.WithError(err).Error("Ошибка декодирования JSON")
-		writeError(w, http.StatusBadRequest, "Invalid JSON request")
+		middleware.WriteError(w, http.StatusBadRequest, "Invalid JSON request")
 		return
 	}
 
 	role := models.UserRole(req.Role)
 	if role != models.Admin && role != models.Customer {
 		h.log.WithField("role", req.Role).Error("Неверная роль")
-		writeError(w, http.StatusBadRequest, "Invalid role")
+		middleware.WriteError(w, http.StatusBadRequest, "Invalid role")
 		return
 	}
 
-	user, err := h.clubService.RegisterUser(req.Name, role)
+	user, err := h.clubService.RegisterUser(req.Name, req.Email, req.Password, role)
 	if err != nil {
+		switch err {
+		case errors.ErrUserAlreadyExists:
+			middleware.WriteError(w, http.StatusConflict, err.Error())
+		case errors.ErrRegistration:
+			middleware.WriteError(w, http.StatusInternalServerError, err.Error())
+		default:
+			middleware.WriteError(w, http.StatusInternalServerError, "Unexpected error")
+		}
 		h.log.WithError(err).Error("Ошибка при регистрации пользователя")
-		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -78,7 +91,7 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.WithError(err).Error("Ошибка декодирования JSON")
-		writeError(w, http.StatusBadRequest, "Invalid request")
+		middleware.WriteError(w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
@@ -87,13 +100,13 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 		// Проверяем тип ошибки
 		switch err {
 		case errors.ErrUserNotFound:
-			writeError(w, http.StatusNotFound, err.Error())
+			middleware.WriteError(w, http.StatusNotFound, err.Error())
 		case errors.ErrSessionActive:
-			writeError(w, http.StatusConflict, err.Error())
+			middleware.WriteError(w, http.StatusConflict, err.Error())
 		case errors.ErrPCBusy:
-			writeError(w, http.StatusConflict, err.Error())
+			middleware.WriteError(w, http.StatusConflict, err.Error())
 		default:
-			writeError(w, http.StatusInternalServerError, "Internal server error")
+			middleware.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 
 		h.log.WithError(err).Error("Ошибка при запуске сессии")
@@ -119,7 +132,7 @@ func (h *Handler) EndSession(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.WithError(err).Error("Ошибка декодирования JSON")
-		writeError(w, http.StatusBadRequest, "Invalid request")
+		middleware.WriteError(w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
@@ -127,14 +140,14 @@ func (h *Handler) EndSession(w http.ResponseWriter, r *http.Request) {
 
 	if req.SessionID == 0 {
 		h.log.Error("session_id == 0, отклоняем запрос")
-		writeError(w, http.StatusBadRequest, "Invalid session_id")
+		middleware.WriteError(w, http.StatusBadRequest, "Invalid session_id")
 		return
 	}
 
 	err := h.clubService.EndSession(req.SessionID)
 	if err != nil {
 		h.log.WithError(err).Error("Ошибка завершения сессии")
-		writeError(w, http.StatusInternalServerError, err.Error())
+		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -162,7 +175,7 @@ func (h *Handler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
 	computers, err := h.clubService.GetComputersStatus()
 	if err != nil {
 		h.log.WithError(err).Error("Ошибка при получении списка компьютеров")
-		writeError(w, http.StatusInternalServerError, "Ошибка при получении списка компьютеров")
+		middleware.WriteError(w, http.StatusInternalServerError, "Ошибка при получении списка компьютеров")
 		return
 	}
 
@@ -170,4 +183,26 @@ func (h *Handler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(computers)
+}
+
+func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		middleware.WriteError(w, http.StatusBadRequest, "Invalid request")
+		return
+	}
+
+	// Вызываем usecase для логина
+	token, err := h.clubService.LoginUser(req.Email, req.Password)
+	if err != nil {
+		middleware.WriteError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	// Отправляем токен
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }

@@ -8,6 +8,7 @@ import (
 type UserRepository interface {
 	CreateUser(user *models.User) error
 	GetUserByID(id int64) (*models.User, error)
+	GetUserByEmail(email string) (*models.User, error)
 }
 
 //type memoryUserRepo struct {
@@ -60,6 +61,15 @@ func (r *PostgresUserRepo) GetUserByID(id int64) (*models.User, error) {
 	result := r.db.First(&user, id)
 	if result.Error != nil {
 		return nil, result.Error
+	}
+	return &user, nil
+}
+
+func (r *PostgresUserRepo) GetUserByEmail(email string) (*models.User, error) {
+	var user models.User
+	err := r.db.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return nil, err
 	}
 	return &user, nil
 }

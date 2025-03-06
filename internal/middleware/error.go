@@ -1,4 +1,4 @@
-package httpService
+package middleware
 
 import (
 	"encoding/json"
@@ -11,8 +11,8 @@ type errorResponse struct {
 	Message string `json:"error"`
 }
 
-// writeError - функция для отправки JSON-ошибок
-func writeError(w http.ResponseWriter, statusCode int, message string) {
+// WriteError - функция для отправки JSON-ошибок
+func WriteError(w http.ResponseWriter, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(errorResponse{Message: message})
@@ -24,7 +24,7 @@ func ErrorHandler(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("Panic recovered: %v", err)
-				writeError(w, http.StatusInternalServerError, "Internal Server Error")
+				WriteError(w, http.StatusInternalServerError, "Internal Server Error")
 			}
 		}()
 		next.ServeHTTP(w, r)
