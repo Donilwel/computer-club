@@ -15,29 +15,25 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	// Подключаемся к PostgreSQL
+	// Подключаемся к БД и Redis
 	db := repository.NewPostgresDB(cfg)
+	redisClient := repository.NewRedisClient(cfg)
 	repository.Migrate(db)
 
-	// Используем PostgreSQL репозитории
+	// Создаем репозитории
 	userRepo := repository.NewPostgresUserRepo(db)
-	sessionRepo := repository.NewPostgresSessionRepo(db)
+	sessionRepo := repository.NewPostgresSessionRepo(db, redisClient)
+	computerRepo := repository.NewComputerRepository(db)
 
 	// Создаем бизнес-логику
-	clubService := usecase.NewClubUsecase(userRepo, sessionRepo)
+	clubService := usecase.NewClubUsecase(userRepo, sessionRepo, computerRepo)
 
-	// Создаем HTTP обработчик
+	// Запускаем HTTP сервер
 	handler := httpService.NewHandler(clubService)
-
-	// Настраиваем маршрутизатор
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Use(httpService.ErrorHandler)
-
-	// Регистрируем API
 	handler.RegisterRoutes(r)
 
-	// Запускаем сервер
-	fmt.Println("Server started on :8080")
-	http.ListenAndServe(":8080", r)
+	fmt.Println("Server started on :", cfg.ServerPort)
+	http.ListenAndServe(":"+cfg.ServerPort, r)
 }

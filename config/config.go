@@ -19,7 +19,6 @@ type Config struct {
 	RedisPort  string
 }
 
-// LoadConfig загружает переменные из `.env`
 func LoadConfig() *Config {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using default environment variables")
@@ -47,4 +46,8 @@ func getEnv(key, fallback string) string {
 func (c *Config) DSN() string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		c.DBHost, c.DBPort, c.DBUser, c.DBPassword, c.DBName)
+}
+
+func (c *Config) RedisAddr() string {
+	return fmt.Sprintf("%s:%s", c.RedisHost, c.RedisPort)
 }

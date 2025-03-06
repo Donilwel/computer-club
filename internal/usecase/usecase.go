@@ -11,26 +11,32 @@ type ClubService interface {
 	StartSession(userID int64, pcNumber int) (*models.Session, error)
 	EndSession(sessionID int64) error
 	GetActiveSessions() []*models.Session
+	GetComputersStatus() ([]models.Computer, error)
 }
 
-type clubUsecase struct {
-	userRepo    repository.UserRepository
-	sessionRepo repository.SessionRepository
+type ClubUsecase struct {
+	userRepo     repository.UserRepository
+	sessionRepo  repository.SessionRepository
+	computerRepo repository.ComputerRepository
 }
 
-func NewClubUsecase(userRepo repository.UserRepository, sessionRepo repository.SessionRepository) ClubService {
-	return &clubUsecase{userRepo: userRepo, sessionRepo: sessionRepo}
+func NewClubUsecase(userRepo repository.UserRepository, sessionRepo repository.SessionRepository, computerRepo repository.ComputerRepository) *ClubUsecase {
+	return &ClubUsecase{
+		userRepo:     userRepo,
+		sessionRepo:  sessionRepo,
+		computerRepo: computerRepo,
+	}
 }
 
 // RegisterUser создает нового пользователя
-func (u *clubUsecase) RegisterUser(name string, role models.UserRole) (*models.User, error) {
+func (u *ClubUsecase) RegisterUser(name string, role models.UserRole) (*models.User, error) {
 	user := &models.User{Name: name, Role: role}
 	err := u.userRepo.CreateUser(user)
 	return user, err
 }
 
 // StartSession начинает новую игровую сессию
-func (u *clubUsecase) StartSession(userID int64, pcNumber int) (*models.Session, error) {
+func (u *ClubUsecase) StartSession(userID int64, pcNumber int) (*models.Session, error) {
 	// Проверяем, существует ли пользователь
 	_, err := u.userRepo.GetUserByID(userID)
 	if err != nil {
@@ -41,11 +47,15 @@ func (u *clubUsecase) StartSession(userID int64, pcNumber int) (*models.Session,
 }
 
 // EndSession завершает игровую сессию
-func (u *clubUsecase) EndSession(sessionID int64) error {
+func (u *ClubUsecase) EndSession(sessionID int64) error {
 	return u.sessionRepo.EndSession(sessionID)
 }
 
 // GetActiveSessions возвращает список активных сессий
-func (u *clubUsecase) GetActiveSessions() []*models.Session {
+func (u *ClubUsecase) GetActiveSessions() []*models.Session {
 	return u.sessionRepo.GetActiveSessions()
+}
+
+func (u *ClubUsecase) GetComputersStatus() ([]models.Computer, error) {
+	return u.computerRepo.GetComputers()
 }

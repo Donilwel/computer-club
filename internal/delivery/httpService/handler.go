@@ -1,12 +1,11 @@
 package httpService
 
 import (
-	"encoding/json"
-	"net/http"
-	"strconv"
-
 	"computer-club/internal/models"
 	"computer-club/internal/usecase"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -26,6 +25,7 @@ func (h *Handler) RegisterRoutes(r *chi.Mux) {
 	r.Post("/session/start", h.StartSession)
 	r.Post("/session/end", h.EndSession)
 	r.Get("/sessions/active", h.GetActiveSessions)
+	r.Get("/computers/status", h.GetComputersStatus)
 }
 
 // RegisterUser регистрирует нового пользователя
@@ -78,18 +78,32 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 
 // EndSession завершает сессию
 func (h *Handler) EndSession(w http.ResponseWriter, r *http.Request) {
-	sessionID, err := strconv.ParseInt(r.URL.Query().Get("session_id"), 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid session_id", http.StatusBadRequest)
+	var req struct {
+		SessionID int64 `json:"session_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		fmt.Println("Ошибка декодирования JSON:", err)
+		writeError(w, http.StatusBadRequest, "Invalid request")
 		return
 	}
 
-	if err := h.clubService.EndSession(sessionID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	fmt.Println("Получен session_id:", req.SessionID) // <-- ЛОГ
+
+	if req.SessionID == 0 {
+		fmt.Println("session_id == 0, возвращаем ошибку") // <-- ЛОГ
+		writeError(w, http.StatusBadRequest, "Invalid session_id")
+		return
+	}
+
+	err := h.clubService.EndSession(req.SessionID)
+	if err != nil {
+		fmt.Println("Ошибка завершения сессии:", err) // <-- ЛОГ
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Session ended successfully"})
 }
 
 // GetActiveSessions возвращает активные сессии
@@ -97,4 +111,15 @@ func (h *Handler) GetActiveSessions(w http.ResponseWriter, r *http.Request) {
 	sessions := h.clubService.GetActiveSessions()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(sessions)
+}
+
+func (h *Handler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
+	computers, err := h.clubService.GetComputersStatus()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Ошибка при получении списка компьютеров")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(computers)
 }
