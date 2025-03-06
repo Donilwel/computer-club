@@ -4,18 +4,24 @@ import (
 	"fmt"
 	"net/http"
 
+	"computer-club/config"
 	"computer-club/internal/delivery/httpService"
 	"computer-club/internal/repository"
 	"computer-club/internal/usecase"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
-	// Инициализируем репозитории
-	userRepo := repository.NewMemoryUserRepo()
-	sessionRepo := repository.NewMemorySessionRepo()
+	cfg := config.LoadConfig()
+
+	// Подключаемся к PostgreSQL
+	db := repository.NewPostgresDB(cfg)
+	repository.Migrate(db)
+
+	// Используем PostgreSQL репозитории
+	userRepo := repository.NewPostgresUserRepo(db)
+	sessionRepo := repository.NewPostgresSessionRepo(db)
 
 	// Создаем бизнес-логику
 	clubService := usecase.NewClubUsecase(userRepo, sessionRepo)
@@ -26,9 +32,9 @@ func main() {
 	// Настраиваем маршрутизатор
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Use(httpService.ErrorHandler) // Добавляем обработку ошибок
+	r.Use(httpService.ErrorHandler)
 
-	// Регистрируем эндпоинты
+	// Регистрируем API
 	handler.RegisterRoutes(r)
 
 	// Запускаем сервер
