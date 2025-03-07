@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"computer-club/internal/errors"
 	"computer-club/internal/models"
 	"gorm.io/gorm"
 )
@@ -18,6 +19,8 @@ func NewComputerRepository(db *gorm.DB) ComputerRepository {
 
 func (r *PostgresComputerRepo) GetComputers() ([]models.Computer, error) {
 	var computers []models.Computer
-	err := r.db.Find(&computers).Error
-	return computers, err
+	if err := r.db.Find(&computers).Error; err != nil {
+		return nil, errors.ErrFindComputer
+	}
+	return computers, nil
 }

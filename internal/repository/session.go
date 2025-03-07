@@ -1,10 +1,10 @@
 package repository
 
 import (
+	"computer-club/internal/errors"
 	"computer-club/internal/models"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -34,12 +34,12 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int) (*models.
 	// Проверяем, существует ли этот ПК
 	var computer models.Computer
 	if err := r.db.Where("pc_number = ?", pcNumber).First(&computer).Error; err != nil {
-		return nil, errors.New("компьютер не найден")
+		return nil, errors.ErrComputerNotFound
 	}
 
 	// Проверяем, свободен ли компьютер
 	if computer.Status == models.Busy {
-		return nil, errors.New("компьютер уже занят")
+		return nil, errors.ErrPCBusy
 	}
 
 	// Создаем новую сессию
@@ -49,7 +49,7 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int) (*models.
 		StartTime: time.Now(),
 	}
 	if err := r.db.Create(session).Error; err != nil {
-		return nil, err
+		return nil, errors.ErrCreatedSession
 	}
 
 	// Обновляем статус компьютера
@@ -69,18 +69,18 @@ func (r *PostgresSessionRepo) EndSession(sessionID int64) error {
 	// Находим сессию
 	var session models.Session
 	if err := r.db.Where("id = ?", sessionID).First(&session).Error; err != nil {
-		return errors.New("сессия не найдена")
+		return errors.ErrSessionNotFound
 	}
 
 	// Завершаем сессию
 	now := time.Now()
 	if err := r.db.Model(&models.Session{}).Where("id = ?", sessionID).Update("end_time", now).Error; err != nil {
-		return err
+		return errors.ErrUpdateSession
 	}
 
 	// Освобождаем компьютер
 	if err := r.db.Model(&models.Computer{}).Where("pc_number = ?", session.PCNumber).Update("status", models.Free).Error; err != nil {
-		return err
+		return errors.ErrUpdateComputer
 	}
 
 	// Удаляем сессию из кеша

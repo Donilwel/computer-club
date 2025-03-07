@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"computer-club/internal/errors"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -24,7 +25,7 @@ func ErrorHandler(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("Panic recovered: %v", err)
-				WriteError(w, http.StatusInternalServerError, "Internal Server Error")
+				WriteError(w, http.StatusInternalServerError, errors.ErrUnexpected.Error())
 			}
 		}()
 		next.ServeHTTP(w, r)

@@ -56,26 +56,28 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.WithError(err).Error("Ошибка декодирования JSON")
-		middleware.WriteError(w, http.StatusBadRequest, "Invalid JSON request")
+		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
 		return
 	}
 
 	role := models.UserRole(req.Role)
 	if role != models.Admin && role != models.Customer {
 		h.log.WithField("role", req.Role).Error("Неверная роль")
-		middleware.WriteError(w, http.StatusBadRequest, "Invalid role")
+		middleware.WriteError(w, http.StatusBadRequest, errors.ErrInvalidRole.Error())
 		return
 	}
 
 	user, err := h.userService.RegisterUser(req.Name, req.Email, req.Password, role)
 	if err != nil {
 		switch err {
-		case errors.ErrUserAlreadyExists:
-			middleware.WriteError(w, http.StatusConflict, err.Error())
-		case errors.ErrRegistration:
+		case errors.ErrHashedPassword, errors.ErrRegistration:
 			middleware.WriteError(w, http.StatusInternalServerError, err.Error())
+		case errors.ErrUserAlreadyExists, errors.ErrUsernameTaken:
+			middleware.WriteError(w, http.StatusConflict, err.Error())
+		case errors.ErrNameEmpty, errors.ErrEmailEmpty, errors.ErrPasswordEmpty, errors.ErrPasswordTooShort:
+			middleware.WriteError(w, http.StatusBadRequest, err.Error())
 		default:
-			middleware.WriteError(w, http.StatusInternalServerError, "Unexpected error")
+			middleware.WriteError(w, http.StatusInternalServerError, errors.ErrUnexpected.Error())
 		}
 		h.log.WithError(err).Error("Ошибка при регистрации пользователя")
 		return
@@ -101,7 +103,7 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.WithError(err).Error("Ошибка декодирования JSON")
-		middleware.WriteError(w, http.StatusBadRequest, "Invalid request")
+		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
 		return
 	}
 
@@ -109,14 +111,14 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Проверяем тип ошибки
 		switch err {
-		case errors.ErrUserNotFound:
+		case errors.ErrUserNotFound, errors.ErrComputerNotFound:
 			middleware.WriteError(w, http.StatusNotFound, err.Error())
-		case errors.ErrSessionActive:
+		case errors.ErrSessionActive, errors.ErrPCBusy:
 			middleware.WriteError(w, http.StatusConflict, err.Error())
-		case errors.ErrPCBusy:
-			middleware.WriteError(w, http.StatusConflict, err.Error())
+		case errors.ErrCreatedSession:
+			middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		default:
-			middleware.WriteError(w, http.StatusInternalServerError, "Internal server error")
+			middleware.WriteError(w, http.StatusInternalServerError, errors.ErrUnexpected.Error())
 		}
 
 		h.log.WithError(err).Error("Ошибка при запуске сессии")
@@ -201,7 +203,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		middleware.WriteError(w, http.StatusBadRequest, "Invalid request")
+		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
 		return
 	}
 

@@ -16,28 +16,50 @@ type UserService interface {
 	GetUserByEmail(email string) (*models.User, error)
 }
 
-type UserUsercase struct {
+type UserUsecase struct {
 	userRepo repository.UserRepository
 }
 
-func NewUserUsecase(userRepo repository.UserRepository) *UserUsercase {
-	return &UserUsercase{userRepo: userRepo}
+func NewUserUsecase(userRepo repository.UserRepository) *UserUsecase {
+	return &UserUsecase{userRepo: userRepo}
 }
 
-func (u *UserUsercase) RegisterUser(name, email, password string, role models.UserRole) (*models.User, error) {
+func (u *UserUsecase) RegisterUser(name, email, password string, role models.UserRole) (*models.User, error) {
+	// Проверки на пустые поля
+	if name == "" {
+		return nil, errors.ErrNameEmpty
+	}
+	if email == "" {
+		return nil, errors.ErrEmailEmpty
+	}
+	if password == "" {
+		return nil, errors.ErrPasswordEmpty
+	}
+	if len(password) < 6 {
+		return nil, errors.ErrPasswordTooShort
+	}
+
+	// Если роль не передана — ставим Customer по умолчанию
+	if role == "" {
+		role = models.Customer
+	}
+
+	// Проверяем, существует ли пользователь с таким email
 	existingUser, _ := u.userRepo.GetUserByEmail(email)
 	if existingUser != nil {
 		return nil, errors.ErrUserAlreadyExists
 	}
 
-	existingUserByName, _ := u.userRepo.GetUserByEmail(email)
+	// Проверяем, существует ли пользователь с таким name
+	existingUserByName, _ := u.userRepo.GetUserByName(name)
 	if existingUserByName != nil {
 		return nil, errors.ErrUsernameTaken
 	}
 
+	// Хешируем пароль
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, err
+		return nil, errors.ErrHashedPassword
 	}
 
 	user := &models.User{
@@ -47,14 +69,15 @@ func (u *UserUsercase) RegisterUser(name, email, password string, role models.Us
 		Role:     string(role),
 	}
 
+	// Сохраняем пользователя в БД
 	if err := u.userRepo.CreateUser(user); err != nil {
-		return nil, err
+		return nil, errors.ErrRegistration
 	}
 
 	return user, nil
 }
 
-func (u *UserUsercase) LoginUser(email string, password string) (string, error) {
+func (u *UserUsecase) LoginUser(email string, password string) (string, error) {
 	user, err := u.userRepo.GetUserByEmail(email)
 	if err != nil {
 		return "", errors.ErrInvalidCredentials
@@ -85,6 +108,6 @@ func generateJWT(user *models.User) (string, error) {
 	return token.SignedString(jwtKey)
 }
 
-func (u *UserUsercase) GetUserByEmail(email string) (*models.User, error) {
+func (u *UserUsecase) GetUserByEmail(email string) (*models.User, error) {
 	return u.userRepo.GetUserByEmail(email)
 }

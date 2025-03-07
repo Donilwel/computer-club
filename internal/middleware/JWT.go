@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"computer-club/internal/errors"
 	"context"
 	"github.com/golang-jwt/jwt/v4"
 	"net/http"
@@ -13,7 +14,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
 		if tokenString == "" {
-			WriteError(w, http.StatusUnauthorized, "Missing token")
+			WriteError(w, http.StatusUnauthorized, errors.ErrMissingToken.Error())
 			return
 		}
 
@@ -23,7 +24,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		})
 
 		if err != nil || !token.Valid {
-			WriteError(w, http.StatusUnauthorized, "Invalid token")
+			WriteError(w, http.StatusUnauthorized, errors.ErrWrongToken.Error())
 			return
 		}
 
