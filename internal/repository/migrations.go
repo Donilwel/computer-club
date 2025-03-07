@@ -7,7 +7,7 @@ import (
 )
 
 func Migrate(db *gorm.DB) {
-	db.AutoMigrate(&models.User{}, &models.Session{}, &models.Computer{}, &models.Tariff{})
+	db.AutoMigrate(&models.User{}, &models.Session{}, &models.Computer{}, &models.Tariff{}, &models.Wallet{}, &models.Transaction{})
 
 	// Проверяем, есть ли компьютеры в базе
 	var count int64

@@ -11,7 +11,7 @@ type WalletRepository interface {
 	Withdraw(userID int64, amount float64) error
 	GetBalance(userID int64) (float64, error)
 	GetTransactions(userID int64) ([]models.Transaction, error)
-	CreateWallet(wallet models.Wallet) error
+	CreateWallet(wallet *models.Wallet) error
 }
 
 type PostgresWalletRepo struct {
@@ -57,7 +57,7 @@ func (r *PostgresWalletRepo) GetTransactions(userID int64) ([]models.Transaction
 	return transactions, nil
 }
 
-func (r *PostgresWalletRepo) CreateWallet(wallet models.Wallet) error {
+func (r *PostgresWalletRepo) CreateWallet(wallet *models.Wallet) error {
 	if err := r.db.Create(wallet).Error; err != nil {
 		return errors.ErrCreateWallet
 	}

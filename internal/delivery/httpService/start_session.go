@@ -39,7 +39,7 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 		case errors.ErrCreatedSession:
 			middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		default:
-			middleware.WriteError(w, http.StatusInternalServerError, errors.ErrUnexpected.Error())
+			middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		}
 
 		h.log.WithError(err).Error("Ошибка при запуске сессии")
