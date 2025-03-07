@@ -3,13 +3,13 @@ package main
 import (
 	"computer-club/internal/logger"
 	"computer-club/internal/middleware"
+	"computer-club/internal/usecase"
 	"fmt"
 	"net/http"
 
 	"computer-club/config"
 	"computer-club/internal/delivery/httpService"
 	"computer-club/internal/repository"
-	"computer-club/internal/usecase"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -26,11 +26,11 @@ func main() {
 	sessionRepo := repository.NewPostgresSessionRepo(db, redisClient)
 	computerRepo := repository.NewComputerRepository(db)
 
-	// Создаем бизнес-логику
-	clubService := usecase.NewClubUsecase(userRepo, sessionRepo, computerRepo)
-
+	userUsecase := usecase.NewUserUsecase(userRepo)
+	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
+	computerUsecase := usecase.NewComputerUsecase(computerRepo)
 	// Запускаем HTTP сервер
-	handler := httpService.NewHandler(clubService, log)
+	handler := httpService.NewHandler(userUsecase, computerUsecase, sessionUsecase, log)
 	r := chi.NewRouter()
 	r.Use(middleware.LoggerMiddleware(log))
 	handler.RegisterRoutes(r)

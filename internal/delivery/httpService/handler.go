@@ -12,13 +12,23 @@ import (
 )
 
 type Handler struct {
-	clubService usecase.ClubService
-	log         *logrus.Logger
+	userService     usecase.UserService
+	computerService usecase.ComputerService
+	sessionService  usecase.SessionService
+	log             *logrus.Logger
 }
 
 // NewHandler создает новый HTTP-обработчик
-func NewHandler(clubService usecase.ClubService, log *logrus.Logger) *Handler {
-	return &Handler{clubService: clubService, log: log}
+func NewHandler(userService usecase.UserService,
+	computerService usecase.ComputerService,
+	sessionService usecase.SessionService,
+	log *logrus.Logger) *Handler {
+	return &Handler{
+		userService:     userService,
+		computerService: computerService,
+		sessionService:  sessionService,
+		log:             log,
+	}
 }
 
 // RegisterRoutes регистрирует эндпоинты
@@ -57,7 +67,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.clubService.RegisterUser(req.Name, req.Email, req.Password, role)
+	user, err := h.userService.RegisterUser(req.Name, req.Email, req.Password, role)
 	if err != nil {
 		switch err {
 		case errors.ErrUserAlreadyExists:
@@ -95,7 +105,7 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.clubService.StartSession(req.UserID, req.PCNumber)
+	session, err := h.sessionService.StartSession(req.UserID, req.PCNumber)
 	if err != nil {
 		// Проверяем тип ошибки
 		switch err {
@@ -144,7 +154,7 @@ func (h *Handler) EndSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.clubService.EndSession(req.SessionID)
+	err := h.sessionService.EndSession(req.SessionID)
 	if err != nil {
 		h.log.WithError(err).Error("Ошибка завершения сессии")
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
@@ -161,7 +171,7 @@ func (h *Handler) EndSession(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetActiveSessions(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Запрос на получение активных сессий")
 
-	sessions := h.clubService.GetActiveSessions()
+	sessions := h.sessionService.GetActiveSessions()
 	h.log.WithField("count", len(sessions)).Info("Активные сессии получены")
 
 	w.Header().Set("Content-Type", "application/json")
@@ -172,7 +182,7 @@ func (h *Handler) GetActiveSessions(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Запрос на получение статуса компьютеров")
 
-	computers, err := h.clubService.GetComputersStatus()
+	computers, err := h.computerService.GetComputersStatus()
 	if err != nil {
 		h.log.WithError(err).Error("Ошибка при получении списка компьютеров")
 		middleware.WriteError(w, http.StatusInternalServerError, "Ошибка при получении списка компьютеров")
@@ -196,7 +206,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Вызываем usecase для логина
-	token, err := h.clubService.LoginUser(req.Email, req.Password)
+	token, err := h.userService.LoginUser(req.Email, req.Password)
 	if err != nil {
 		middleware.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
