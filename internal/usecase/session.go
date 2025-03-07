@@ -19,6 +19,7 @@ type SessionService interface {
 type SessionUsecase struct {
 	sessionRepository repository.SessionRepository
 	userRepo          repository.UserRepository
+	computerRepo      repository.ComputerRepository
 }
 
 func NewSessionUsecase(sessionRepository repository.SessionRepository, userRepo repository.UserRepository) *SessionUsecase {
@@ -63,6 +64,13 @@ func (u *SessionUsecase) checkAndCloseExpiredSessions() {
 	for _, session := range sessions {
 		if session.EndTime.Before(now) {
 			log.Printf("Завершаем сессию %d (пользователь %d)", session.ID, session.UserID)
+
+			// Обновление статуса компьютера
+			if err := u.computerRepo.UpdateStatus(session.PCNumber, models.Free); err != nil {
+				log.Printf("Не удалось обновить статус компьютера для сессии %d: %v", session.ID, err)
+			}
+
+			// Завершаем сессию
 			u.EndSession(session.ID)
 		}
 	}

@@ -21,6 +21,7 @@ func main() {
 	db := repository.NewPostgresDB(cfg)
 	redisClient := repository.NewRedisClient(cfg)
 	repository.Migrate(db)
+
 	// Создаем репозитории
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

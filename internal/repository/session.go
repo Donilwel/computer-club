@@ -32,25 +32,35 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int, tariffID 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	// Начинаем транзакцию
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return nil, errors.ErrStartTransaction
+	}
+
 	// Проверяем, есть ли активная сессия у пользователя
 	var activeSession models.Session
-	if err := r.db.Where("user_id = ?", userID).First(&activeSession).Error; err == nil {
+	if err := tx.Where("user_id = ?", userID).First(&activeSession).Error; err == nil {
+		tx.Rollback()
 		return nil, errors.ErrSessionActive
 	}
 
 	var tariff models.Tariff
-	if err := r.db.First(&tariff, tariffID).Error; err != nil {
+	if err := tx.First(&tariff, tariffID).Error; err != nil {
+		tx.Rollback()
 		return nil, errors.ErrTariffNotFound
 	}
 
 	// Проверяем, существует ли этот ПК
 	var computer models.Computer
-	if err := r.db.Where("pc_number = ?", pcNumber).First(&computer).Error; err != nil {
+	if err := tx.Where("pc_number = ?", pcNumber).First(&computer).Error; err != nil {
+		tx.Rollback()
 		return nil, errors.ErrComputerNotFound
 	}
 
 	// Проверяем, свободен ли компьютер
 	if computer.Status == models.Busy {
+		tx.Rollback()
 		return nil, errors.ErrPCBusy
 	}
 
@@ -62,20 +72,29 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int, tariffID 
 		UserID:    userID,
 		PCNumber:  pcNumber,
 		TariffID:  tariffID,
-		StartTime: time.Now(),
+		StartTime: startTime,
 		EndTime:   &endTime,
 	}
-	if err := r.db.Create(session).Error; err != nil {
+	if err := tx.Create(session).Error; err != nil {
+		tx.Rollback()
 		return nil, errors.ErrCreatedSession
 	}
 
 	// Обновляем статус компьютера
-	r.db.Model(&models.Computer{}).Where("pc_number = ?", pcNumber).Update("status", models.Busy)
+	if err := tx.Model(&models.Computer{}).Where("pc_number = ?", pcNumber).Update("status", models.Busy).Error; err != nil {
+		tx.Rollback()
+		return nil, errors.ErrUpdateComputerStatus
+	}
 
 	// Кешируем активную сессию в Redis
 	ctx := context.Background()
 	sessionJSON, _ := json.Marshal(session)
 	r.redis.Set(ctx, getSessionKey(session.ID), sessionJSON, 10*time.Minute)
+
+	// Подтверждаем транзакцию
+	if err := tx.Commit().Error; err != nil {
+		return nil, errors.ErrCommitData
+	}
 
 	return session, nil
 }
@@ -83,26 +102,44 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int, tariffID 
 func (r *PostgresSessionRepo) EndSession(sessionID int64) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	// Начинаем транзакцию
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return errors.ErrStartTransaction
+	}
+
 	// Находим сессию
 	var session models.Session
-	if err := r.db.Where("id = ?", sessionID).First(&session).Error; err != nil {
+	if err := tx.Where("id = ?", sessionID).First(&session).Error; err != nil {
+		tx.Rollback()
 		return errors.ErrSessionNotFound
 	}
 
 	// Завершаем сессию
 	now := time.Now()
-	if err := r.db.Model(&models.Session{}).Where("id = ?", sessionID).Update("end_time", now).Error; err != nil {
+	if err := tx.Model(&models.Session{}).Where("id = ?", sessionID).Update("end_time", now).Error; err != nil {
+		tx.Rollback()
 		return errors.ErrUpdateSession
 	}
 
 	// Освобождаем компьютер
-	if err := r.db.Model(&models.Computer{}).Where("pc_number = ?", session.PCNumber).Update("status", models.Free).Error; err != nil {
+	if err := tx.Model(&models.Computer{}).Where("pc_number = ?", session.PCNumber).Update("status", models.Free).Error; err != nil {
+		tx.Rollback()
 		return errors.ErrUpdateComputer
 	}
 
 	// Удаляем сессию из кеша
 	ctx := context.Background()
-	r.redis.Del(ctx, getSessionKey(sessionID))
+	if err := r.redis.Del(ctx, getSessionKey(sessionID)).Err(); err != nil {
+		tx.Rollback()
+		return errors.ErrDeleteRedis
+	}
+
+	// Подтверждаем транзакцию
+	if err := tx.Commit().Error; err != nil {
+		return errors.ErrCommitData
+	}
 
 	return nil
 }
