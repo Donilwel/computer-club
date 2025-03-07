@@ -14,6 +14,7 @@ type UserService interface {
 	RegisterUser(name, email, password string, role models.UserRole) (*models.User, error)
 	LoginUser(name string, password string) (string, error)
 	GetUserByEmail(email string) (*models.User, error)
+	GetUserByID(id int64) (*models.User, error)
 }
 
 type UserUsecase struct {
@@ -71,7 +72,7 @@ func (u *UserUsecase) RegisterUser(name, email, password string, role models.Use
 
 	// Сохраняем пользователя в БД
 	if err := u.userRepo.CreateUser(user); err != nil {
-		return nil, errors.ErrRegistration
+		return nil, err
 	}
 
 	return user, nil
@@ -110,4 +111,8 @@ func generateJWT(user *models.User) (string, error) {
 
 func (u *UserUsecase) GetUserByEmail(email string) (*models.User, error) {
 	return u.userRepo.GetUserByEmail(email)
+}
+
+func (u *UserUsecase) GetUserByID(id int64) (*models.User, error) {
+	return u.userRepo.GetUserByID(id)
 }

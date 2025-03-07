@@ -6,6 +6,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"net/http"
 	"os"
+	"strings"
 )
 
 var jwtKey = []byte(os.Getenv("JWT_SECRET"))
@@ -18,6 +19,9 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// Убираем "Bearer " из токена
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
 		claims := jwt.MapClaims{}
 		token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
@@ -28,9 +32,23 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Добавляем user_id и role в контекст запроса
-		ctx := context.WithValue(r.Context(), "user_id", int64(claims["user_id"].(float64)))
-		ctx = context.WithValue(ctx, "role", claims["role"].(string))
+		// Проверяем user_id
+		userID, ok := claims["user_id"].(float64)
+		if !ok {
+			WriteError(w, http.StatusUnauthorized, errors.ErrWrongIDFromJWT.Error())
+			return
+		}
+
+		// Проверяем role
+		role, ok := claims["role"].(string)
+		if !ok {
+			WriteError(w, http.StatusUnauthorized, errors.ErrWrongRoleFromJWT.Error())
+			return
+		}
+
+		// Добавляем в контекст
+		ctx := context.WithValue(r.Context(), "user_id", int64(userID))
+		ctx = context.WithValue(ctx, "role", role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

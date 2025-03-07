@@ -4,6 +4,9 @@ import "errors"
 
 var (
 	ErrUserNotFound       = errors.New("пользователь не найден")
+	ErrForbidden          = errors.New("ошибка доступа к текущему запросу. необходима роль пользователя: админ")
+	ErrWrongIDFromJWT     = errors.New("неправильный user_id в токене")
+	ErrWrongRoleFromJWT   = errors.New("неправильная роль в токене")
 	ErrJSONRequest        = errors.New("ошибка JSON запроса")
 	ErrInvalidRole        = errors.New("некорректная роль")
 	ErrUserAlreadyExists  = errors.New("пользователь уже существует")

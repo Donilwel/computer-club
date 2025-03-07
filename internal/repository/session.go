@@ -31,6 +31,13 @@ func NewPostgresSessionRepo(db *gorm.DB, redis *redis.Client) SessionRepository 
 func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int) (*models.Session, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	// Проверяем, есть ли активная сессия у пользователя
+	var activeSession models.Session
+	if err := r.db.Where("user_id = ? AND end_time IS NULL", userID).First(&activeSession).Error; err == nil {
+		return nil, errors.ErrSessionActive
+	}
+
 	// Проверяем, существует ли этот ПК
 	var computer models.Computer
 	if err := r.db.Where("pc_number = ?", pcNumber).First(&computer).Error; err != nil {

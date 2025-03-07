@@ -13,39 +13,6 @@ type UserRepository interface {
 	GetUserByName(name string) (*models.User, error)
 }
 
-//type memoryUserRepo struct {
-//	mu     sync.Mutex
-//	users  map[int64]*models.User
-//	lastID int64
-//}
-//
-//func NewMemoryUserRepo() UserRepository {
-//	return &memoryUserRepo{
-//		users: make(map[int64]*models.User),
-//	}
-//}
-//
-//func (r *memoryUserRepo) CreateUser(user *models.User) error {
-//	r.mu.Lock()
-//	defer r.mu.Unlock()
-//	r.lastID++
-//	user.ID = r.lastID
-//	r.users[user.ID] = user
-//	return nil
-//}
-//
-//// GetUserByID получает пользователя по ID
-//func (r *memoryUserRepo) GetUserByID(id int64) (*models.User, error) {
-//	r.mu.Lock()
-//	defer r.mu.Unlock()
-//
-//	user, exists := r.users[id]
-//	if !exists {
-//		return nil, fmt.Errorf("user not found")
-//	}
-//	return user, nil
-//}
-
 type PostgresUserRepo struct {
 	db *gorm.DB
 }
@@ -55,7 +22,10 @@ func NewPostgresUserRepo(db *gorm.DB) *PostgresUserRepo {
 }
 
 func (r *PostgresUserRepo) CreateUser(user *models.User) error {
-	return r.db.Create(user).Error
+	if err := r.db.Create(user).Error; err != nil {
+		return errors.ErrCreatedUser
+	}
+	return nil
 }
 
 func (r *PostgresUserRepo) GetUserByID(id int64) (*models.User, error) {
