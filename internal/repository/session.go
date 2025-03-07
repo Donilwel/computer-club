@@ -13,7 +13,7 @@ import (
 )
 
 type SessionRepository interface {
-	StartSession(userID int64, pcNumber int) (*models.Session, error)
+	StartSession(userID int64, pcNumber int, tariffID int64) (*models.Session, error)
 	EndSession(sessionID int64) error
 	GetActiveSessions() []*models.Session
 }
@@ -28,14 +28,19 @@ func NewPostgresSessionRepo(db *gorm.DB, redis *redis.Client) SessionRepository 
 	return &PostgresSessionRepo{db: db, redis: redis}
 }
 
-func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int) (*models.Session, error) {
+func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	// Проверяем, есть ли активная сессия у пользователя
 	var activeSession models.Session
-	if err := r.db.Where("user_id = ? AND end_time IS NULL", userID).First(&activeSession).Error; err == nil {
+	if err := r.db.Where("user_id = ?", userID).First(&activeSession).Error; err == nil {
 		return nil, errors.ErrSessionActive
+	}
+
+	var tariff models.Tariff
+	if err := r.db.First(&tariff, tariffID).Error; err != nil {
+		return nil, errors.ErrTariffNotFound
 	}
 
 	// Проверяем, существует ли этот ПК
@@ -49,11 +54,16 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int) (*models.
 		return nil, errors.ErrPCBusy
 	}
 
+	startTime := time.Now()
+	endTime := startTime.Add(time.Duration(tariff.Duration) * time.Minute)
+
 	// Создаем новую сессию
 	session := &models.Session{
 		UserID:    userID,
 		PCNumber:  pcNumber,
+		TariffID:  tariffID,
 		StartTime: time.Now(),
+		EndTime:   &endTime,
 	}
 	if err := r.db.Create(session).Error; err != nil {
 		return nil, errors.ErrCreatedSession

@@ -4,6 +4,7 @@ import (
 	"computer-club/internal/logger"
 	"computer-club/internal/middleware"
 	"computer-club/internal/usecase"
+	"context"
 	"fmt"
 	"net/http"
 
@@ -20,8 +21,10 @@ func main() {
 	db := repository.NewPostgresDB(cfg)
 	redisClient := repository.NewRedisClient(cfg)
 	repository.Migrate(db)
-
 	// Создаем репозитории
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	userRepo := repository.NewPostgresUserRepo(db)
 	sessionRepo := repository.NewPostgresSessionRepo(db, redisClient)
 	computerRepo := repository.NewComputerRepository(db)
@@ -31,6 +34,8 @@ func main() {
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
 	computerUsecase := usecase.NewComputerUsecase(computerRepo)
 	tariffUsecase := usecase.NewTariffUsecase(tariffRepo)
+
+	go sessionUsecase.MonitorSessions(ctx)
 	// Запускаем HTTP сервер
 	handler := httpService.NewHandler(userUsecase, computerUsecase, sessionUsecase, tariffUsecase, log)
 	r := chi.NewRouter()

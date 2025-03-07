@@ -20,18 +20,19 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		PCNumber int `json:"pc_number"`
+		PCNumber int   `json:"pc_number"`
+		TariffID int64 `json:"tariff_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.WithError(err).Error("Ошибка декодирования JSON")
 		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
 		return
 	}
-	session, err := h.sessionService.StartSession(userID, req.PCNumber)
+	session, err := h.sessionService.StartSession(userID, req.PCNumber, req.TariffID)
 	if err != nil {
 		// Проверяем тип ошибки
 		switch err {
-		case errors.ErrUserNotFound, errors.ErrComputerNotFound:
+		case errors.ErrUserNotFound, errors.ErrComputerNotFound, errors.ErrTariffNotFound:
 			middleware.WriteError(w, http.StatusNotFound, err.Error())
 		case errors.ErrSessionActive, errors.ErrPCBusy:
 			middleware.WriteError(w, http.StatusConflict, err.Error())
@@ -49,6 +50,7 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 		"session_id": session.ID,
 		"user_id":    session.UserID,
 		"pc_number":  session.PCNumber,
+		"tariff_id":  session.TariffID,
 	}).Info("Сессия успешно запущена")
 
 	w.Header().Set("Content-Type", "application/json")

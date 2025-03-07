@@ -35,5 +35,6 @@ var (
 	ErrWrongToken         = errors.New("токен не правильный")
 	ErrFindTariffByID     = errors.New("ошибка при поиске тарифа в базе данных по id")
 	ErrInvalidTariffID    = errors.New("ошибка чтения тариф id")
+	ErrTariffNotFound     = errors.New("тариф не найден")
 	ErrFindTariffs        = errors.New("ошибка при поиске тарифов в базе данных")
 )
