@@ -20,10 +20,17 @@ type SessionUsecase struct {
 	sessionRepository repository.SessionRepository
 	userRepo          repository.UserRepository
 	computerRepo      repository.ComputerRepository
+	walletService     WalletService
 }
 
-func NewSessionUsecase(sessionRepository repository.SessionRepository, userRepo repository.UserRepository) *SessionUsecase {
-	return &SessionUsecase{sessionRepository: sessionRepository, userRepo: userRepo}
+func NewSessionUsecase(sessionRepository repository.SessionRepository,
+	userRepo repository.UserRepository,
+	computerRepo repository.ComputerRepository,
+	walletService WalletService) *SessionUsecase {
+	return &SessionUsecase{sessionRepository: sessionRepository,
+		userRepo:      userRepo,
+		computerRepo:  computerRepo,
+		walletService: walletService}
 }
 
 func (u *SessionUsecase) StartSession(userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
@@ -31,6 +38,12 @@ func (u *SessionUsecase) StartSession(userID int64, pcNumber int, tariffID int64
 	if err != nil {
 		return nil, errors.ErrUserNotFound
 	}
+
+	err = u.walletService.ChargeForSession(userID, tariffID)
+	if err != nil {
+		return nil, err
+	}
+
 	return u.sessionRepository.StartSession(userID, pcNumber, tariffID)
 }
 

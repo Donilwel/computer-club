@@ -18,11 +18,13 @@ type UserService interface {
 }
 
 type UserUsecase struct {
-	userRepo repository.UserRepository
+	userRepo      repository.UserRepository
+	walletService WalletService
 }
 
-func NewUserUsecase(userRepo repository.UserRepository) *UserUsecase {
-	return &UserUsecase{userRepo: userRepo}
+func NewUserUsecase(userRepo repository.UserRepository,
+	walletService WalletService) *UserUsecase {
+	return &UserUsecase{userRepo: userRepo, walletService: walletService}
 }
 
 func (u *UserUsecase) RegisterUser(name, email, password string, role models.UserRole) (*models.User, error) {
@@ -74,7 +76,9 @@ func (u *UserUsecase) RegisterUser(name, email, password string, role models.Use
 	if err := u.userRepo.CreateUser(user); err != nil {
 		return nil, err
 	}
-
+	if err := u.walletService.CreateWallet(user.ID); err != nil {
+		return nil, err
+	}
 	return user, nil
 }
 

@@ -25,6 +25,7 @@ func (r *PostgresUserRepo) CreateUser(user *models.User) error {
 	if err := r.db.Create(user).Error; err != nil {
 		return errors.ErrCreatedUser
 	}
+
 	return nil
 }
 
