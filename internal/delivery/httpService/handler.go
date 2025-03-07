@@ -9,6 +9,7 @@ type Handler struct {
 	userService     usecase.UserService
 	computerService usecase.ComputerService
 	sessionService  usecase.SessionService
+	tariffService   usecase.TariffService
 	log             *logrus.Logger
 }
 
@@ -16,11 +17,13 @@ type Handler struct {
 func NewHandler(userService usecase.UserService,
 	computerService usecase.ComputerService,
 	sessionService usecase.SessionService,
+	tariffService usecase.TariffService,
 	log *logrus.Logger) *Handler {
 	return &Handler{
 		userService:     userService,
 		computerService: computerService,
 		sessionService:  sessionService,
+		tariffService:   tariffService,
 		log:             log,
 	}
 }

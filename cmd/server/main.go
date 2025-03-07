@@ -25,12 +25,14 @@ func main() {
 	userRepo := repository.NewPostgresUserRepo(db)
 	sessionRepo := repository.NewPostgresSessionRepo(db, redisClient)
 	computerRepo := repository.NewComputerRepository(db)
+	tariffRepo := repository.NewTariffRepositoryPostgres(db)
 
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
 	computerUsecase := usecase.NewComputerUsecase(computerRepo)
+	tariffUsecase := usecase.NewTariffUsecase(tariffRepo)
 	// Запускаем HTTP сервер
-	handler := httpService.NewHandler(userUsecase, computerUsecase, sessionUsecase, log)
+	handler := httpService.NewHandler(userUsecase, computerUsecase, sessionUsecase, tariffUsecase, log)
 	r := chi.NewRouter()
 	r.Use(middleware.LoggerMiddleware(log))
 	handler.RegisterRoutes(r)

@@ -9,6 +9,8 @@ import (
 func (h *Handler) RegisterRoutes(r *chi.Mux) {
 	r.Post("/register", h.RegisterUser)
 	r.Post("/login", h.LoginUser)
+	r.Get("/tariff", h.GetTariff)
+	r.Get("/tariff/{id}", h.GetTariffByID)
 	r.Group(func(protected chi.Router) {
 		protected.Use(middleware.AuthMiddleware)
 		protected.Get("/info", h.GetUserInfo)

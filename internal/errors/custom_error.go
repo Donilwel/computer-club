@@ -33,4 +33,7 @@ var (
 	ErrUnexpected         = errors.New("неизвестная ошибка")
 	ErrMissingToken       = errors.New("токен не найден в хедере")
 	ErrWrongToken         = errors.New("токен не правильный")
+	ErrFindTariffByID     = errors.New("ошибка при поиске тарифа в базе данных по id")
+	ErrInvalidTariffID    = errors.New("ошибка чтения тариф id")
+	ErrFindTariffs        = errors.New("ошибка при поиске тарифов в базе данных")
 )
