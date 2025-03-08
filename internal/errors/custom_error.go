@@ -50,4 +50,5 @@ var (
 	ErrWalletAlreadyExists  = errors.New("ошибка при создании кошелька: он уже существует")
 	ErrCreateWallet         = errors.New("ошибка при создании кошелька в базу данных")
 	ErrInvalidUserID        = errors.New("ошибка чтения id пользователя")
+	ErrCreateTransaction    = errors.New("ошибка создания модели транзакции")
 )

@@ -41,7 +41,6 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 		default:
 			middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		}
-
 		h.log.WithError(err).Error("Ошибка при запуске сессии")
 		return
 	}

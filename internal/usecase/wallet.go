@@ -12,6 +12,7 @@ type WalletService interface {
 	GetBalance(userID int64) (float64, error)
 	GetTransactions(userID int64) ([]models.Transaction, error)
 	ChargeForSession(userID int64, tariffID int64) error
+	CreateTransaction(userID int64, amount float64, typ string, tariffID int64) (*models.Transaction, error)
 	CreateWallet(userID int64) error
 }
 
@@ -48,9 +49,13 @@ func (u *WalletUsecase) ChargeForSession(userID int64, tariffID int64) error {
 	if balance < tariff.Price {
 		return errors.ErrInsufficientFunds
 	}
-
 	// Списываем средства
 	if err := u.walletRepo.Withdraw(userID, tariff.Price); err != nil {
+		return err
+	}
+
+	_, err = u.walletRepo.CreateTransaction(userID, tariff.Price, string(models.Buy), tariff)
+	if err != nil {
 		return err
 	}
 
@@ -88,4 +93,15 @@ func (u *WalletUsecase) GetBalance(userID int64) (float64, error) {
 
 func (u *WalletUsecase) GetTransactions(userID int64) ([]models.Transaction, error) {
 	return u.walletRepo.GetTransactions(userID)
+}
+
+func (u *WalletUsecase) CreateTransaction(userID int64, amount float64, typ string, tariffID int64) (*models.Transaction, error) {
+	if tariffID != -1 {
+		tariff, err := u.tariffRepo.GetTariffByID(tariffID)
+		if err != nil {
+			return nil, err
+		}
+		return u.walletRepo.CreateTransaction(userID, amount, typ, tariff)
+	}
+	return u.walletRepo.CreateTransaction(userID, amount, typ, nil)
 }

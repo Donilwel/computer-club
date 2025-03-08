@@ -35,6 +35,13 @@ func (h *Handler) PutMoneyOnWallet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	transaction, err := h.walletService.CreateTransaction(req.UserID, req.Amount, string(models.Add), -1)
+	if err != nil {
+		h.log.WithError(err).Error("Ошибка при создании модели транзакции")
+		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "Deposit successful"}`))
+	json.NewEncoder(w).Encode(transaction)
 }

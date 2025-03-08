@@ -11,11 +11,27 @@ type WalletRepository interface {
 	Withdraw(userID int64, amount float64) error
 	GetBalance(userID int64) (float64, error)
 	GetTransactions(userID int64) ([]models.Transaction, error)
+	CreateTransaction(userID int64, amount float64, typ string, tariff *models.Tariff) (*models.Transaction, error)
 	CreateWallet(wallet *models.Wallet) error
 }
 
 type PostgresWalletRepo struct {
 	db *gorm.DB
+}
+
+func (r *PostgresWalletRepo) CreateTransaction(userID int64, amount float64, typ string, tariff *models.Tariff) (*models.Transaction, error) {
+	var tariffID int64
+	if tariff == nil {
+		tariffID = -1
+	} else {
+		tariffID = tariff.ID
+	}
+
+	transaction := models.Transaction{UserID: userID, Amount: amount, Type: models.TransactionType(typ), TariffID: tariffID}
+	if err := r.db.Create(&transaction).Error; err != nil {
+		return nil, errors.ErrCreateTransaction
+	}
+	return &transaction, nil
 }
 
 func NewPostgresWalletRepo(db *gorm.DB) *PostgresWalletRepo {
