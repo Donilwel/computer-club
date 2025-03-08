@@ -19,6 +19,10 @@ type PostgresWalletRepo struct {
 	db *gorm.DB
 }
 
+func NewPostgresWalletRepo(db *gorm.DB) *PostgresWalletRepo {
+	return &PostgresWalletRepo{db: db}
+}
+
 func (r *PostgresWalletRepo) CreateTransaction(userID int64, amount float64, typ string, tariff *models.Tariff) (*models.Transaction, error) {
 	var tariffID int64
 	if tariff == nil {
@@ -32,10 +36,6 @@ func (r *PostgresWalletRepo) CreateTransaction(userID int64, amount float64, typ
 		return nil, errors.ErrCreateTransaction
 	}
 	return &transaction, nil
-}
-
-func NewPostgresWalletRepo(db *gorm.DB) *PostgresWalletRepo {
-	return &PostgresWalletRepo{db: db}
 }
 
 func (r *PostgresWalletRepo) Deposit(userID int64, amount float64) error {

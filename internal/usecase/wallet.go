@@ -19,6 +19,15 @@ type WalletService interface {
 type WalletUsecase struct {
 	walletRepo repository.WalletRepository
 	tariffRepo repository.TariffRepository
+	userRepo   repository.UserRepository
+}
+
+func NewWalletUsecase(walletRepo repository.WalletRepository,
+	tariffRepo repository.TariffRepository,
+	userRepo repository.UserRepository) *WalletUsecase {
+	return &WalletUsecase{walletRepo: walletRepo,
+		tariffRepo: tariffRepo,
+		userRepo:   userRepo}
 }
 
 func (u *WalletUsecase) CreateWallet(userID int64) error {
@@ -62,14 +71,15 @@ func (u *WalletUsecase) ChargeForSession(userID int64, tariffID int64) error {
 	return nil
 }
 
-func NewWalletUsecase(walletRepo repository.WalletRepository, tariffRepo repository.TariffRepository) *WalletUsecase {
-	return &WalletUsecase{walletRepo: walletRepo, tariffRepo: tariffRepo}
-}
-
 func (u *WalletUsecase) Deposit(userID int64, amount float64) error {
 	if amount <= 0 {
 		return errors.ErrInvalidAmount
 	}
+
+	if _, err := u.userRepo.GetUserByID(userID); err != nil {
+		return errors.ErrUserNotFound
+	}
+
 	return u.walletRepo.Deposit(userID, amount)
 }
 
