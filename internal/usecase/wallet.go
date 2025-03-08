@@ -79,6 +79,9 @@ func (u *WalletUsecase) Deposit(userID int64, amount float64) error {
 	if _, err := u.userRepo.GetUserByID(userID); err != nil {
 		return errors.ErrUserNotFound
 	}
+	if _, err := u.walletRepo.GetBalance(userID); err != nil {
+		return errors.ErrCheckBalance
+	}
 
 	return u.walletRepo.Deposit(userID, amount)
 }
