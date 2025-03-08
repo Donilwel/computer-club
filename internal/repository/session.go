@@ -40,7 +40,7 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int, tariffID 
 
 	// Проверяем, есть ли активная сессия у пользователя
 	var activeSession models.Session
-	if err := tx.Where("user_id = ?", userID).First(&activeSession).Error; err == nil {
+	if err := tx.Where("user_id = ? AND status = ?", userID, models.Active).First(&activeSession).Error; err == nil {
 		tx.Rollback()
 		return nil, errors.ErrSessionActive
 	}
@@ -72,6 +72,7 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int, tariffID 
 		UserID:    userID,
 		PCNumber:  pcNumber,
 		TariffID:  tariffID,
+		Status:    models.Active,
 		StartTime: startTime,
 		EndTime:   &endTime,
 	}
@@ -117,8 +118,7 @@ func (r *PostgresSessionRepo) EndSession(sessionID int64) error {
 	}
 
 	// Завершаем сессию
-	now := time.Now()
-	if err := tx.Model(&models.Session{}).Where("id = ?", sessionID).Update("end_time", now).Error; err != nil {
+	if err := tx.Model(&models.Session{}).Where("id = ?", sessionID).Update("status", models.Finished).Error; err != nil {
 		tx.Rollback()
 		return errors.ErrUpdateSession
 	}

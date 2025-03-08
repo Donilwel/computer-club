@@ -1,7 +1,5 @@
 package models
 
-import "gorm.io/gorm"
-
 type ComputerStatus string
 
 const (
@@ -10,7 +8,7 @@ const (
 )
 
 type Computer struct {
-	gorm.Model
+	ID       int64          `json:"id" gorm:"primaryKey;autoIncrement"`
 	PCNumber int            `gorm:"uniqueIndex" json:"pc_number"`
 	Status   ComputerStatus `json:"status"`
 }

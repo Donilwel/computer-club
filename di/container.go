@@ -44,7 +44,6 @@ func NewContainer() *Container {
 	db := repository.NewPostgresDB(cfg)
 	redisClient := repository.NewRedisClient(cfg)
 	repository.Migrate(db)
-
 	// Инициализация репозиториев
 	userRepo := repository.NewPostgresUserRepo(db)
 	sessionRepo := repository.NewPostgresSessionRepo(db, redisClient)

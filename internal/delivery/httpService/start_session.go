@@ -50,6 +50,7 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 		"user_id":    session.UserID,
 		"pc_number":  session.PCNumber,
 		"tariff_id":  session.TariffID,
+		"status":     session.Status,
 	}).Info("Сессия успешно запущена")
 
 	w.Header().Set("Content-Type", "application/json")
