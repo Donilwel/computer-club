@@ -16,6 +16,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
 		return
 	}
+	defer r.Body.Close()
 
 	// Вызываем usecase для логина
 	token, err := h.userService.LoginUser(req.Email, req.Password)

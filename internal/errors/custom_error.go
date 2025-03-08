@@ -49,4 +49,5 @@ var (
 	ErrWithdraw             = errors.New("ошибка при выводе средств")
 	ErrWalletAlreadyExists  = errors.New("ошибка при создании кошелька: он уже существует")
 	ErrCreateWallet         = errors.New("ошибка при создании кошелька в базу данных")
+	ErrInvalidUserID        = errors.New("ошибка чтения id пользователя")
 )

@@ -38,13 +38,17 @@ func (u *SessionUsecase) StartSession(userID int64, pcNumber int, tariffID int64
 	if err != nil {
 		return nil, errors.ErrUserNotFound
 	}
+	session, err := u.sessionRepository.StartSession(userID, pcNumber, tariffID)
+	if err != nil {
+		return nil, err
+	}
 
 	err = u.walletService.ChargeForSession(userID, tariffID)
 	if err != nil {
 		return nil, err
 	}
 
-	return u.sessionRepository.StartSession(userID, pcNumber, tariffID)
+	return session, nil
 }
 
 func (u *SessionUsecase) EndSession(sessionID int64) error {

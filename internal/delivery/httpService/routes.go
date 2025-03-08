@@ -16,7 +16,9 @@ func (h *Handler) RegisterRoutes(r *chi.Mux) {
 		protected.Get("/info", h.GetUserInfo)
 		protected.Post("/session/start", h.StartSession)
 		protected.Post("/session/end", h.EndSession)
+		protected.Put("/pay", h.PutMoneyOnWallet)
 		protected.Get("/sessions/active", h.GetActiveSessions)
 		protected.Get("/computers/status", h.GetComputersStatus)
+
 	})
 }

@@ -3,6 +3,7 @@ package httpService
 import (
 	"computer-club/internal/errors"
 	"computer-club/internal/middleware"
+	"computer-club/internal/models"
 	"encoding/json"
 	"net/http"
 )
@@ -12,7 +13,7 @@ func (h *Handler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Запрос на получение статуса компьютеров")
 
 	role, ok := r.Context().Value("role").(string)
-	if !ok || role != "admin" {
+	if !ok || role != string(models.Admin) {
 		h.log.WithError(errors.ErrForbidden).Error("Ошибка при получении списка компьютеров: недостаточно прав")
 		middleware.WriteError(w, http.StatusForbidden, errors.ErrForbidden.Error())
 		return

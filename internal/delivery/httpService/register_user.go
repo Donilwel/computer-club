@@ -24,6 +24,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
 		return
 	}
+	defer r.Body.Close()
 
 	role := models.UserRole(req.Role)
 	if role != models.Admin && role != models.Customer {
