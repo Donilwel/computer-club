@@ -21,8 +21,8 @@ type userHandler struct {
 	log         *logrus.Logger
 }
 
-func NewUserHandler(userService usecase.UserService) UserHandler {
-	return &userHandler{userService: userService}
+func NewUserHandler(userService usecase.UserService, log *logrus.Logger) UserHandler {
+	return &userHandler{userService: userService, log: log}
 }
 
 func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {

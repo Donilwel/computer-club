@@ -66,24 +66,24 @@ func NewContainer() *Container {
 	computerUsecase := usecase.NewComputerUsecase(computerRepo)
 
 	// Инициализация хендлеров
-	userHandler := handlers.NewUserHandler(userUsecase)
+	userHandler := handlers.NewUserHandler(userUsecase, log) // Добавили log
 	sessionHandler := handlers.NewSessionHandler(sessionUsecase, log)
 	tariffHandler := handlers.NewTariffHandler(tariffUsecase, log)
-	walletHadler := handlers.NewWalletHandler(walletUsecase, log)
+	walletHandler := handlers.NewWalletHandler(walletUsecase, log)
 	computerHandler := handlers.NewComputerHandler(computerUsecase, log)
 
-	// Инициализация HTTP-хендлера
-	handler := httpService.NewHandler(userUsecase, computerUsecase, sessionUsecase, tariffUsecase, walletUsecase, log)
+	// Инициализация роутера
 	r := chi.NewRouter()
 	r.Use(middleware.LoggerMiddleware(log))
-	handler.RegisterRoutes(r)
+
+	// Регистрация маршрутов
+	httpService.RegisterRoutes(r, userHandler, tariffHandler, sessionHandler, walletHandler, computerHandler)
 
 	return &Container{
-		Cfg:         cfg,
-		Log:         log,
-		DB:          db,
-		RedisClient: redisClient,
-
+		Cfg:             cfg,
+		Log:             log,
+		DB:              db,
+		RedisClient:     redisClient,
 		UserRepo:        userRepo,
 		SessionRepo:     sessionRepo,
 		ComputerRepo:    computerRepo,

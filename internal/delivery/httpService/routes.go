@@ -1,24 +1,34 @@
 package httpService
 
 import (
+	"computer-club/internal/handlers"
 	"computer-club/internal/middleware"
 	"github.com/go-chi/chi/v5"
 )
 
 // RegisterRoutes регистрирует эндпоинты
-func (h *Handler) RegisterRoutes(r *chi.Mux) {
-	r.Post("/register", h.RegisterUser)
-	r.Post("/login", h.LoginUser)
-	r.Get("/tariff", h.GetTariff)
-	r.Get("/tariff/{id}", h.GetTariffByID)
+func RegisterRoutes(
+	r *chi.Mux,
+	userHandler handlers.UserHandler,
+	tariffHandler handlers.TariffHandler,
+	sessionHandler handlers.SessionHandler,
+	walletHandler handlers.WalletHandler,
+	computerHandler handlers.ComputerHandler,
+) {
+	r.Post("/register", userHandler.RegisterUser)
+	r.Post("/login", userHandler.LoginUser)
+
+	r.Get("/tariff", tariffHandler.GetTariff)
+	r.Get("/tariff/{id}", tariffHandler.GetTariffByID)
+
 	r.Group(func(protected chi.Router) {
 		protected.Use(middleware.AuthMiddleware)
-		protected.Get("/info", h.GetUserInfo)
-		protected.Post("/session/start", h.StartSession)
-		protected.Post("/session/end", h.EndSession)
-		protected.Put("/pay", h.PutMoneyOnWallet)
-		protected.Get("/sessions/active", h.GetActiveSessions)
-		protected.Get("/computers/status", h.GetComputersStatus)
 
+		protected.Get("/info", userHandler.InfoUser)
+		protected.Post("/session/start", sessionHandler.StartSession)
+		protected.Post("/session/end", sessionHandler.EndSession)
+		protected.Put("/pay", walletHandler.PutMoneyOnWallet)
+		protected.Get("/sessions/active", sessionHandler.GetActiveSessions)
+		protected.Get("/computers/status", computerHandler.GetComputersStatus)
 	})
 }
