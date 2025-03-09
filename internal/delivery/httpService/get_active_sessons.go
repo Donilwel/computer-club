@@ -9,6 +9,7 @@ import (
 
 // GetActiveSessions возвращает активные сессии
 func (h *Handler) GetActiveSessions(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	h.log.Info("Запрос на получение активных сессий")
 
 	role, ok := r.Context().Value("role").(string)
@@ -18,7 +19,7 @@ func (h *Handler) GetActiveSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessions := h.sessionService.GetActiveSessions()
+	sessions := h.sessionService.GetActiveSessions(ctx)
 	h.log.WithField("count", len(sessions)).Info("Активные сессии получены")
 
 	w.Header().Set("Content-Type", "application/json")

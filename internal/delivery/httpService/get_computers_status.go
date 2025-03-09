@@ -10,6 +10,7 @@ import (
 
 // GetComputersStatus возвращает статус компьютеров
 func (h *Handler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	h.log.Info("Запрос на получение статуса компьютеров")
 
 	role, ok := r.Context().Value("role").(string)
@@ -19,7 +20,7 @@ func (h *Handler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	computers, err := h.computerService.GetComputersStatus()
+	computers, err := h.computerService.GetComputersStatus(ctx)
 	if err != nil {
 		h.log.WithError(err).Error("Ошибка при получении списка компьютеров")
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())

@@ -4,6 +4,7 @@ import (
 	"computer-club/internal/errors"
 	"computer-club/internal/models"
 	"computer-club/internal/repository"
+	"context"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"os"
@@ -11,10 +12,10 @@ import (
 )
 
 type UserService interface {
-	RegisterUser(name, email, password string, role models.UserRole) (*models.User, error)
-	LoginUser(name string, password string) (string, error)
-	GetUserByEmail(email string) (*models.User, error)
-	GetUserByID(id int64) (*models.User, error)
+	RegisterUser(ctx context.Context, name, email, password string, role models.UserRole) (*models.User, error)
+	LoginUser(ctx context.Context, name string, password string) (string, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+	GetUserByID(ctx context.Context, id int64) (*models.User, error)
 }
 
 type UserUsecase struct {
@@ -23,11 +24,11 @@ type UserUsecase struct {
 }
 
 func NewUserUsecase(userRepo repository.UserRepository,
-	walletService WalletService) *UserUsecase {
+	walletService WalletService) UserService {
 	return &UserUsecase{userRepo: userRepo, walletService: walletService}
 }
 
-func (u *UserUsecase) RegisterUser(name, email, password string, role models.UserRole) (*models.User, error) {
+func (u *UserUsecase) RegisterUser(ctx context.Context, name, email, password string, role models.UserRole) (*models.User, error) {
 	// Проверки на пустые поля
 	if name == "" {
 		return nil, errors.ErrNameEmpty
@@ -48,13 +49,13 @@ func (u *UserUsecase) RegisterUser(name, email, password string, role models.Use
 	}
 
 	// Проверяем, существует ли пользователь с таким email
-	existingUser, _ := u.userRepo.GetUserByEmail(email)
+	existingUser, _ := u.userRepo.GetUserByEmail(ctx, email)
 	if existingUser != nil {
 		return nil, errors.ErrUserAlreadyExists
 	}
 
 	// Проверяем, существует ли пользователь с таким name
-	existingUserByName, _ := u.userRepo.GetUserByName(name)
+	existingUserByName, _ := u.userRepo.GetUserByName(ctx, name)
 	if existingUserByName != nil {
 		return nil, errors.ErrUsernameTaken
 	}
@@ -73,17 +74,17 @@ func (u *UserUsecase) RegisterUser(name, email, password string, role models.Use
 	}
 
 	// Сохраняем пользователя в БД
-	if err := u.userRepo.CreateUser(user); err != nil {
+	if err := u.userRepo.CreateUser(ctx, user); err != nil {
 		return nil, err
 	}
-	if err := u.walletService.CreateWallet(user.ID); err != nil {
+	if err := u.walletService.CreateWallet(ctx, user.ID); err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
-func (u *UserUsecase) LoginUser(email string, password string) (string, error) {
-	user, err := u.userRepo.GetUserByEmail(email)
+func (u *UserUsecase) LoginUser(ctx context.Context, email string, password string) (string, error) {
+	user, err := u.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return "", errors.ErrInvalidCredentials
 	}
@@ -113,10 +114,10 @@ func generateJWT(user *models.User) (string, error) {
 	return token.SignedString(jwtKey)
 }
 
-func (u *UserUsecase) GetUserByEmail(email string) (*models.User, error) {
-	return u.userRepo.GetUserByEmail(email)
+func (u *UserUsecase) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	return u.userRepo.GetUserByEmail(ctx, email)
 }
 
-func (u *UserUsecase) GetUserByID(id int64) (*models.User, error) {
-	return u.userRepo.GetUserByID(id)
+func (u *UserUsecase) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
+	return u.userRepo.GetUserByID(ctx, id)
 }

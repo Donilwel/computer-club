@@ -9,6 +9,7 @@ import (
 
 // GetUserInfo возвращает информацию о пользователе
 func (h *Handler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	h.log.Info("Запрос на получение информации о пользователе")
 
 	userID, ok := r.Context().Value("user_id").(int64)
@@ -17,7 +18,7 @@ func (h *Handler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteError(w, http.StatusUnauthorized, errors.ErrWrongIDFromJWT.Error())
 		return
 	}
-	user, err := h.userService.GetUserByID(userID)
+	user, err := h.userService.GetUserByID(ctx, userID)
 	if err != nil {
 		h.log.Error("Ошибка в поиске пользователя в базе данных")
 		middleware.WriteError(w, http.StatusUnauthorized, err.Error())

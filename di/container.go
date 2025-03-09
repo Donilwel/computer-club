@@ -27,11 +27,11 @@ type Container struct {
 	ComputerRepo    repository.ComputerRepository
 	TariffRepo      repository.TariffRepository
 	WalletRepo      repository.WalletRepository
-	UserUsecase     *usecase.UserUsecase
-	SessionUsecase  *usecase.SessionUsecase
-	ComputerUsecase *usecase.ComputerUsecase
-	TariffUsecase   *usecase.TariffUsecase
-	WalletUsecase   *usecase.WalletUsecase
+	UserUsecase     *usecase.UserService
+	SessionUsecase  *usecase.SessionService
+	ComputerUsecase *usecase.ComputerService
+	TariffUsecase   *usecase.TariffService
+	WalletUsecase   *usecase.WalletService
 	Router          *chi.Mux
 }
 
@@ -74,11 +74,11 @@ func NewContainer() *Container {
 		ComputerRepo:    computerRepo,
 		TariffRepo:      tariffRepo,
 		WalletRepo:      walletRepo,
-		UserUsecase:     userUsecase,
-		SessionUsecase:  sessionUsecase,
-		ComputerUsecase: computerUsecase,
-		TariffUsecase:   tariffUsecase,
-		WalletUsecase:   walletUsecase,
+		UserUsecase:     &userUsecase,
+		SessionUsecase:  &sessionUsecase,
+		ComputerUsecase: &computerUsecase,
+		TariffUsecase:   &tariffUsecase,
+		WalletUsecase:   &walletUsecase,
 		Router:          r,
 	}
 }
@@ -86,8 +86,6 @@ func NewContainer() *Container {
 // RunServer запускает HTTP-сервер
 func (c *Container) RunServer(ctx context.Context) {
 	// Запускаем мониторинг сессий
-	go c.SessionUsecase.MonitorSessions(ctx)
-
 	fmt.Println("Server started on :", c.Cfg.ServerPort)
 	err := http.ListenAndServe(":"+c.Cfg.ServerPort, c.Router)
 	if err != nil {

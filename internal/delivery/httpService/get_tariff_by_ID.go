@@ -11,7 +11,7 @@ import (
 
 // GetTariffByID получения тарифа по его ID
 func (h *Handler) GetTariffByID(w http.ResponseWriter, r *http.Request) {
-
+	ctx := r.Context()
 	idStr := chi.URLParam(r, "id")
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -22,7 +22,7 @@ func (h *Handler) GetTariffByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.log.Info("Запрос на получение тарифа по id")
-	tariff, err := h.tariffService.GetTariffByID(id)
+	tariff, err := h.tariffService.GetTariffByID(ctx, id)
 	if err != nil {
 		h.log.Error("ошибка при запросе тарифа по id")
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())

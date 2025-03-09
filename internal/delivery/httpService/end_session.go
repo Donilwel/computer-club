@@ -9,6 +9,7 @@ import (
 
 // EndSession завершает сессию
 func (h *Handler) EndSession(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	h.log.Info("Запрос на завершение сессии")
 
 	var req struct {
@@ -28,7 +29,7 @@ func (h *Handler) EndSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.sessionService.EndSession(req.SessionID)
+	err := h.sessionService.EndSession(ctx, req.SessionID)
 	if err != nil {
 		h.log.WithError(err).Error("Ошибка завершения сессии")
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())

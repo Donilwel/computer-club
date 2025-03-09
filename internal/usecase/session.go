@@ -10,9 +10,9 @@ import (
 )
 
 type SessionService interface {
-	StartSession(userID int64, pcNumber int, tariffID int64) (*models.Session, error)
-	EndSession(sessionID int64) error
-	GetActiveSessions() []*models.Session
+	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
+	EndSession(ctx context.Context, sessionID int64) error
+	GetActiveSessions(ctx context.Context) []*models.Session
 	MonitorSessions(ctx context.Context)
 }
 
@@ -26,24 +26,24 @@ type SessionUsecase struct {
 func NewSessionUsecase(sessionRepository repository.SessionRepository,
 	userRepo repository.UserRepository,
 	computerRepo repository.ComputerRepository,
-	walletService WalletService) *SessionUsecase {
+	walletService WalletService) SessionService {
 	return &SessionUsecase{sessionRepository: sessionRepository,
 		userRepo:      userRepo,
 		computerRepo:  computerRepo,
 		walletService: walletService}
 }
 
-func (u *SessionUsecase) StartSession(userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
-	_, err := u.userRepo.GetUserByID(userID)
+func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
+	_, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return nil, errors.ErrUserNotFound
 	}
-	session, err := u.sessionRepository.StartSession(userID, pcNumber, tariffID)
+	session, err := u.sessionRepository.StartSession(ctx, userID, pcNumber, tariffID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = u.walletService.ChargeForSession(userID, tariffID)
+	err = u.walletService.ChargeForSession(ctx, userID, tariffID)
 	if err != nil {
 		return nil, err
 	}
@@ -51,12 +51,12 @@ func (u *SessionUsecase) StartSession(userID int64, pcNumber int, tariffID int64
 	return session, nil
 }
 
-func (u *SessionUsecase) EndSession(sessionID int64) error {
-	return u.sessionRepository.EndSession(sessionID)
+func (u *SessionUsecase) EndSession(ctx context.Context, sessionID int64) error {
+	return u.sessionRepository.EndSession(ctx, sessionID)
 }
 
-func (u *SessionUsecase) GetActiveSessions() []*models.Session {
-	return u.sessionRepository.GetActiveSessions()
+func (u *SessionUsecase) GetActiveSessions(ctx context.Context) []*models.Session {
+	return u.sessionRepository.GetActiveSessions(ctx)
 }
 
 func (u *SessionUsecase) MonitorSessions(ctx context.Context) {
@@ -69,13 +69,13 @@ func (u *SessionUsecase) MonitorSessions(ctx context.Context) {
 			log.Println("Остановка мониторинга сессий")
 			return
 		case <-ticker.C:
-			u.checkAndCloseExpiredSessions()
+			u.checkAndCloseExpiredSessions(ctx)
 		}
 	}
 }
 
-func (u *SessionUsecase) checkAndCloseExpiredSessions() {
-	sessions := u.sessionRepository.GetActiveSessions()
+func (u *SessionUsecase) checkAndCloseExpiredSessions(ctx context.Context) {
+	sessions := u.sessionRepository.GetActiveSessions(ctx)
 	now := time.Now()
 
 	for _, session := range sessions {
@@ -83,12 +83,12 @@ func (u *SessionUsecase) checkAndCloseExpiredSessions() {
 			log.Printf("Завершаем сессию %d (пользователь %d)", session.ID, session.UserID)
 
 			// Обновление статуса компьютера
-			if err := u.computerRepo.UpdateStatus(session.PCNumber, models.Free); err != nil {
+			if err := u.computerRepo.UpdateStatus(ctx, session.PCNumber, models.Free); err != nil {
 				log.Printf("Не удалось обновить статус компьютера для сессии %d: %v", session.ID, err)
 			}
 
 			// Завершаем сессию
-			u.EndSession(session.ID)
+			u.EndSession(ctx, session.ID)
 		}
 	}
 }

@@ -9,6 +9,7 @@ import (
 )
 
 func (h *Handler) PutMoneyOnWallet(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	h.log.Info("Запрос на отправку средств на счет игрока")
 
 	role, ok := r.Context().Value("role").(string)
@@ -29,13 +30,13 @@ func (h *Handler) PutMoneyOnWallet(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := h.walletService.Deposit(req.UserID, req.Amount); err != nil {
+	if err := h.walletService.Deposit(ctx, req.UserID, req.Amount); err != nil {
 		h.log.WithError(err).Error("Ошибка при передаче денег")
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	transaction, err := h.walletService.CreateTransaction(req.UserID, req.Amount, string(models.Add), -1)
+	transaction, err := h.walletService.CreateTransaction(ctx, req.UserID, req.Amount, string(models.Add), -1)
 	if err != nil {
 		h.log.WithError(err).Error("Ошибка при создании модели транзакции")
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())

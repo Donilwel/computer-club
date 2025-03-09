@@ -3,18 +3,23 @@ package repository
 import (
 	"computer-club/internal/errors"
 	"computer-club/internal/models"
+	"context"
 	"gorm.io/gorm"
 )
 
 type ComputerRepository interface {
-	GetComputers() ([]models.Computer, error)
-	UpdateStatus(number int, free models.ComputerStatus) error
+	GetComputers(ctx context.Context) ([]models.Computer, error)
+	UpdateStatus(ctx context.Context, number int, free models.ComputerStatus) error
 }
 type PostgresComputerRepo struct {
 	db *gorm.DB
 }
 
-func (r *PostgresComputerRepo) UpdateStatus(number int, free models.ComputerStatus) error {
+func NewComputerRepository(db *gorm.DB) ComputerRepository {
+	return &PostgresComputerRepo{db: db}
+}
+
+func (r *PostgresComputerRepo) UpdateStatus(ctx context.Context, number int, free models.ComputerStatus) error {
 	var computer models.Computer
 	if err := r.db.First(&computer, "id = ?", number).Error; err != nil {
 		return errors.ErrFindComputer
@@ -24,12 +29,7 @@ func (r *PostgresComputerRepo) UpdateStatus(number int, free models.ComputerStat
 	}
 	return nil
 }
-
-func NewComputerRepository(db *gorm.DB) ComputerRepository {
-	return &PostgresComputerRepo{db: db}
-}
-
-func (r *PostgresComputerRepo) GetComputers() ([]models.Computer, error) {
+func (r *PostgresComputerRepo) GetComputers(ctx context.Context) ([]models.Computer, error) {
 	var computers []models.Computer
 	if err := r.db.Find(&computers).Error; err != nil {
 		return nil, errors.ErrFindComputer

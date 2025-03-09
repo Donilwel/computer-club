@@ -11,6 +11,7 @@ import (
 
 // RegisterUser регистрирует нового пользователя
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	h.log.Info("Запрос на регистрацию пользователя")
 
 	var req struct {
@@ -33,7 +34,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.userService.RegisterUser(req.Name, req.Email, req.Password, role)
+	user, err := h.userService.RegisterUser(ctx, req.Name, req.Email, req.Password, role)
 	if err != nil {
 		switch err {
 		case errors.ErrHashedPassword, errors.ErrRegistration:

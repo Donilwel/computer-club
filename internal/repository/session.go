@@ -13,9 +13,9 @@ import (
 )
 
 type SessionRepository interface {
-	StartSession(userID int64, pcNumber int, tariffID int64) (*models.Session, error)
-	EndSession(sessionID int64) error
-	GetActiveSessions() []*models.Session
+	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
+	EndSession(ctx context.Context, sessionID int64) error
+	GetActiveSessions(ctx context.Context) []*models.Session
 }
 
 type PostgresSessionRepo struct {
@@ -28,7 +28,7 @@ func NewPostgresSessionRepo(db *gorm.DB, redis *redis.Client) SessionRepository 
 	return &PostgresSessionRepo{db: db, redis: redis}
 }
 
-func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
+func (r *PostgresSessionRepo) StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -88,7 +88,6 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int, tariffID 
 	}
 
 	// Кешируем активную сессию в Redis
-	ctx := context.Background()
 	sessionJSON, _ := json.Marshal(session)
 	r.redis.Set(ctx, getSessionKey(session.ID), sessionJSON, 10*time.Minute)
 
@@ -100,7 +99,7 @@ func (r *PostgresSessionRepo) StartSession(userID int64, pcNumber int, tariffID 
 	return session, nil
 }
 
-func (r *PostgresSessionRepo) EndSession(sessionID int64) error {
+func (r *PostgresSessionRepo) EndSession(ctx context.Context, sessionID int64) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -130,7 +129,6 @@ func (r *PostgresSessionRepo) EndSession(sessionID int64) error {
 	}
 
 	// Удаляем сессию из кеша
-	ctx := context.Background()
 	if err := r.redis.Del(ctx, getSessionKey(sessionID)).Err(); err != nil {
 		tx.Rollback()
 		return errors.ErrDeleteRedis
@@ -144,9 +142,7 @@ func (r *PostgresSessionRepo) EndSession(sessionID int64) error {
 	return nil
 }
 
-func (r *PostgresSessionRepo) GetActiveSessions() []*models.Session {
-	ctx := context.Background()
-
+func (r *PostgresSessionRepo) GetActiveSessions(ctx context.Context) []*models.Session {
 	// Проверяем кеш
 	var sessions []*models.Session
 	keys, _ := r.redis.Keys(ctx, "session:*").Result()

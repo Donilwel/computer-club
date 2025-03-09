@@ -3,25 +3,26 @@ package repository
 import (
 	"computer-club/internal/errors"
 	"computer-club/internal/models"
+	"context"
 	"gorm.io/gorm"
 )
 
 type UserRepository interface {
-	CreateUser(user *models.User) error
-	GetUserByID(id int64) (*models.User, error)
-	GetUserByEmail(email string) (*models.User, error)
-	GetUserByName(name string) (*models.User, error)
+	CreateUser(ctx context.Context, user *models.User) error
+	GetUserByID(ctx context.Context, id int64) (*models.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+	GetUserByName(ctx context.Context, name string) (*models.User, error)
 }
 
 type PostgresUserRepo struct {
 	db *gorm.DB
 }
 
-func NewPostgresUserRepo(db *gorm.DB) *PostgresUserRepo {
+func NewPostgresUserRepo(db *gorm.DB) UserRepository {
 	return &PostgresUserRepo{db: db}
 }
 
-func (r *PostgresUserRepo) CreateUser(user *models.User) error {
+func (r *PostgresUserRepo) CreateUser(ctx context.Context, user *models.User) error {
 	if err := r.db.Create(user).Error; err != nil {
 		return errors.ErrCreatedUser
 	}
@@ -29,7 +30,7 @@ func (r *PostgresUserRepo) CreateUser(user *models.User) error {
 	return nil
 }
 
-func (r *PostgresUserRepo) GetUserByID(id int64) (*models.User, error) {
+func (r *PostgresUserRepo) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
 	var user models.User
 	result := r.db.First(&user, id)
 	if result.Error != nil {
@@ -38,7 +39,7 @@ func (r *PostgresUserRepo) GetUserByID(id int64) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *PostgresUserRepo) GetUserByEmail(email string) (*models.User, error) {
+func (r *PostgresUserRepo) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 	err := r.db.Where("email = ?", email).First(&user).Error
 	if err != nil {
@@ -47,7 +48,7 @@ func (r *PostgresUserRepo) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *PostgresUserRepo) GetUserByName(name string) (*models.User, error) {
+func (r *PostgresUserRepo) GetUserByName(ctx context.Context, name string) (*models.User, error) {
 	var user models.User
 	err := r.db.Where("name = ?", name).First(&user).Error
 	if err != nil {

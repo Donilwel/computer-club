@@ -10,6 +10,7 @@ import (
 
 // StartSession начинает новую сессию
 func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	h.log.Info("Запрос на начало сессии")
 
 	userID, ok := r.Context().Value("user_id").(int64)
@@ -28,7 +29,7 @@ func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
 		return
 	}
-	session, err := h.sessionService.StartSession(userID, req.PCNumber, req.TariffID)
+	session, err := h.sessionService.StartSession(ctx, userID, req.PCNumber, req.TariffID)
 	if err != nil {
 		// Проверяем тип ошибки
 		switch err {

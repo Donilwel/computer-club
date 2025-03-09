@@ -7,8 +7,9 @@ import (
 )
 
 func (h *Handler) GetTariff(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	h.log.Info("Запрос на получение списка тарифов")
-	tariffs, err := h.tariffService.GetTariff()
+	tariffs, err := h.tariffService.GetTariff(ctx)
 	if err != nil {
 		h.log.Error("ошибка при запросе списка тарифов")
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
