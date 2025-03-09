@@ -3,6 +3,7 @@ package di
 import (
 	"computer-club/config"
 	"computer-club/internal/delivery/httpService"
+	"computer-club/internal/handlers"
 	"computer-club/internal/logger"
 	"computer-club/internal/middleware"
 	"computer-club/internal/repository"
@@ -22,6 +23,11 @@ type Container struct {
 	Log             *logrus.Logger
 	DB              *gorm.DB
 	RedisClient     *redis.Client
+	UserHandler     handlers.UserHandler
+	SessionHandler  handlers.SessionHandler
+	ComputerHandler handlers.ComputerHandler
+	TariffHandler   handlers.TariffHandler
+	WalletHandler   handlers.WalletHandler
 	UserRepo        repository.UserRepository
 	SessionRepo     repository.SessionRepository
 	ComputerRepo    repository.ComputerRepository
@@ -44,6 +50,7 @@ func NewContainer() *Container {
 	db := repository.NewPostgresDB(cfg)
 	redisClient := repository.NewRedisClient(cfg)
 	repository.Migrate(db)
+
 	// Инициализация репозиториев
 	userRepo := repository.NewPostgresUserRepo(db)
 	sessionRepo := repository.NewPostgresSessionRepo(db, redisClient)
@@ -58,6 +65,13 @@ func NewContainer() *Container {
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo, computerRepo, walletUsecase)
 	computerUsecase := usecase.NewComputerUsecase(computerRepo)
 
+	// Инициализация хендлеров
+	userHandler := handlers.NewUserHandler(userUsecase)
+	sessionHandler := handlers.NewSessionHandler(sessionUsecase, log)
+	tariffHandler := handlers.NewTariffHandler(tariffUsecase, log)
+	walletHadler := handlers.NewWalletHandler(walletUsecase, log)
+	computerHandler := handlers.NewComputerHandler(computerUsecase, log)
+
 	// Инициализация HTTP-хендлера
 	handler := httpService.NewHandler(userUsecase, computerUsecase, sessionUsecase, tariffUsecase, walletUsecase, log)
 	r := chi.NewRouter()
@@ -65,10 +79,11 @@ func NewContainer() *Container {
 	handler.RegisterRoutes(r)
 
 	return &Container{
-		Cfg:             cfg,
-		Log:             log,
-		DB:              db,
-		RedisClient:     redisClient,
+		Cfg:         cfg,
+		Log:         log,
+		DB:          db,
+		RedisClient: redisClient,
+
 		UserRepo:        userRepo,
 		SessionRepo:     sessionRepo,
 		ComputerRepo:    computerRepo,
