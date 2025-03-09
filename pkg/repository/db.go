@@ -1,10 +1,21 @@
 package repository
 
 import (
+	"computer-club/config"
 	"computer-club/internal/models"
 	"fmt"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"log"
 )
+
+func NewPostgresDB(cfg *config.Config) *gorm.DB {
+	db, err := gorm.Open(postgres.Open(cfg.DSN()), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	return db
+}
 
 func Migrate(db *gorm.DB) {
 	db.AutoMigrate(&models.User{}, &models.Session{}, &models.Computer{}, &models.Tariff{}, &models.Wallet{}, &models.Transaction{})

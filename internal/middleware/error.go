@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"computer-club/internal/errors"
+	"computer-club/pkg/errors"
 	"encoding/json"
 	"log"
 	"net/http"

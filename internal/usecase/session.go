@@ -1,9 +1,9 @@
 package usecase
 
 import (
-	"computer-club/internal/errors"
 	"computer-club/internal/models"
 	"computer-club/internal/repository"
+	"computer-club/pkg/errors"
 	"context"
 	"log"
 	"time"

@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"computer-club/internal/errors"
 	"computer-club/internal/models"
+	"computer-club/pkg/errors"
 	"context"
 	"gorm.io/gorm"
 )

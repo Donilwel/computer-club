@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"computer-club/internal/errors"
 	"computer-club/internal/middleware"
 	"computer-club/internal/usecase"
+	"computer-club/pkg/errors"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"

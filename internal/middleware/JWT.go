@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"computer-club/internal/errors"
+	"computer-club/pkg/errors"
 	"context"
 	"github.com/golang-jwt/jwt/v4"
 	"net/http"

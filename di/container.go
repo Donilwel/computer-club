@@ -8,6 +8,7 @@ import (
 	"computer-club/internal/middleware"
 	"computer-club/internal/repository"
 	"computer-club/internal/usecase"
+	repository2 "computer-club/pkg/repository"
 	"context"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -47,9 +48,9 @@ func NewContainer() *Container {
 	log := logger.NewLogger()
 
 	// Подключение к БД и Redis
-	db := repository.NewPostgresDB(cfg)
-	redisClient := repository.NewRedisClient(cfg)
-	repository.Migrate(db)
+	db := repository2.NewPostgresDB(cfg)
+	redisClient := repository2.NewRedisClient(cfg)
+	repository2.Migrate(db)
 
 	// Инициализация репозиториев
 	userRepo := repository.NewPostgresUserRepo(db)
