@@ -5,11 +5,11 @@
 
 # Компиляция бинарника
 build:
-	$(GO) build -o $(BINARY_NAME) cmd/server/main.go
+	$(GO) build -o $(BINARY_NAME) cmd/app/main.go
 
 # Запуск сервера локально
 run:
-	$(GO) run cmd/server/main.go
+	$(GO) run cmd/app/main.go
 
 # Запуск тестов с покрытием
 test:

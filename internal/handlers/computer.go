@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"computer-club/internal/middleware"
-	"computer-club/internal/models"
+	"computer-club/internal/repository/models"
 	"computer-club/internal/usecase"
 	"computer-club/pkg/errors"
 	"encoding/json"

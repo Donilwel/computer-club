@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"computer-club/internal/models"
 	"computer-club/internal/repository"
+	models2 "computer-club/internal/repository/models"
 	"computer-club/pkg/errors"
 	"context"
 )
@@ -11,9 +11,9 @@ type WalletService interface {
 	Deposit(ctx context.Context, userID int64, amount float64) error
 	Withdraw(ctx context.Context, userID int64, amount float64) error
 	GetBalance(ctx context.Context, userID int64) (float64, error)
-	GetTransactions(ctx context.Context, userID int64) ([]models.Transaction, error)
+	GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error)
 	ChargeForSession(ctx context.Context, userID int64, tariffID int64) error
-	CreateTransaction(ctx context.Context, userID int64, amount float64, typ string, tariffID int64) (*models.Transaction, error)
+	CreateTransaction(ctx context.Context, userID int64, amount float64, typ string, tariffID int64) (*models2.Transaction, error)
 	CreateWallet(ctx context.Context, userID int64) error
 }
 
@@ -37,7 +37,7 @@ func (u *WalletUsecase) CreateWallet(ctx context.Context, userID int64) error {
 		return errors.ErrWalletAlreadyExists
 	}
 
-	wallet := &models.Wallet{
+	wallet := &models2.Wallet{
 		UserID:  userID,
 		Balance: 0.0,
 	}
@@ -64,7 +64,7 @@ func (u *WalletUsecase) ChargeForSession(ctx context.Context, userID int64, tari
 		return err
 	}
 
-	_, err = u.walletRepo.CreateTransaction(ctx, userID, tariff.Price, string(models.Buy), tariff)
+	_, err = u.walletRepo.CreateTransaction(ctx, userID, tariff.Price, string(models2.Buy), tariff)
 	if err != nil {
 		return err
 	}
@@ -105,11 +105,11 @@ func (u *WalletUsecase) GetBalance(ctx context.Context, userID int64) (float64, 
 	return u.walletRepo.GetBalance(ctx, userID)
 }
 
-func (u *WalletUsecase) GetTransactions(ctx context.Context, userID int64) ([]models.Transaction, error) {
+func (u *WalletUsecase) GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error) {
 	return u.walletRepo.GetTransactions(ctx, userID)
 }
 
-func (u *WalletUsecase) CreateTransaction(ctx context.Context, userID int64, amount float64, typ string, tariffID int64) (*models.Transaction, error) {
+func (u *WalletUsecase) CreateTransaction(ctx context.Context, userID int64, amount float64, typ string, tariffID int64) (*models2.Transaction, error) {
 	if tariffID != -1 {
 		tariff, err := u.tariffRepo.GetTariffByID(ctx, tariffID)
 		if err != nil {

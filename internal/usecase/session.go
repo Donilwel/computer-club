@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"computer-club/internal/models"
 	"computer-club/internal/repository"
+	models2 "computer-club/internal/repository/models"
 	"computer-club/pkg/errors"
 	"context"
 	"log"
@@ -10,9 +10,9 @@ import (
 )
 
 type SessionService interface {
-	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
+	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models2.Session, error)
 	EndSession(ctx context.Context, sessionID int64) error
-	GetActiveSessions(ctx context.Context) []*models.Session
+	GetActiveSessions(ctx context.Context) []*models2.Session
 	MonitorSessions(ctx context.Context)
 }
 
@@ -33,7 +33,7 @@ func NewSessionUsecase(sessionRepository repository.SessionRepository,
 		walletService: walletService}
 }
 
-func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
+func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models2.Session, error) {
 	_, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return nil, errors.ErrUserNotFound
@@ -55,7 +55,7 @@ func (u *SessionUsecase) EndSession(ctx context.Context, sessionID int64) error 
 	return u.sessionRepository.EndSession(ctx, sessionID)
 }
 
-func (u *SessionUsecase) GetActiveSessions(ctx context.Context) []*models.Session {
+func (u *SessionUsecase) GetActiveSessions(ctx context.Context) []*models2.Session {
 	return u.sessionRepository.GetActiveSessions(ctx)
 }
 
@@ -83,7 +83,7 @@ func (u *SessionUsecase) checkAndCloseExpiredSessions(ctx context.Context) {
 			log.Printf("Завершаем сессию %d (пользователь %d)", session.ID, session.UserID)
 
 			// Обновление статуса компьютера
-			if err := u.computerRepo.UpdateStatus(ctx, session.PCNumber, models.Free); err != nil {
+			if err := u.computerRepo.UpdateStatus(ctx, session.PCNumber, models2.Free); err != nil {
 				log.Printf("Не удалось обновить статус компьютера для сессии %d: %v", session.ID, err)
 			}
 

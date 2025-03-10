@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"computer-club/internal/models"
+	models2 "computer-club/internal/repository/models"
 	"computer-club/pkg/errors"
 	"context"
 	"encoding/json"
@@ -13,9 +13,9 @@ import (
 )
 
 type SessionRepository interface {
-	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
+	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models2.Session, error)
 	EndSession(ctx context.Context, sessionID int64) error
-	GetActiveSessions(ctx context.Context) []*models.Session
+	GetActiveSessions(ctx context.Context) []*models2.Session
 }
 
 type PostgresSessionRepo struct {
@@ -28,7 +28,7 @@ func NewPostgresSessionRepo(db *gorm.DB, redis *redis.Client) SessionRepository 
 	return &PostgresSessionRepo{db: db, redis: redis}
 }
 
-func (r *PostgresSessionRepo) StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
+func (r *PostgresSessionRepo) StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models2.Session, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -39,27 +39,27 @@ func (r *PostgresSessionRepo) StartSession(ctx context.Context, userID int64, pc
 	}
 
 	// Проверяем, есть ли активная сессия у пользователя
-	var activeSession models.Session
-	if err := tx.Where("user_id = ? AND status = ?", userID, models.Active).First(&activeSession).Error; err == nil {
+	var activeSession models2.Session
+	if err := tx.Where("user_id = ? AND status = ?", userID, models2.Active).First(&activeSession).Error; err == nil {
 		tx.Rollback()
 		return nil, errors.ErrSessionActive
 	}
 
-	var tariff models.Tariff
+	var tariff models2.Tariff
 	if err := tx.First(&tariff, tariffID).Error; err != nil {
 		tx.Rollback()
 		return nil, errors.ErrTariffNotFound
 	}
 
 	// Проверяем, существует ли этот ПК
-	var computer models.Computer
+	var computer models2.Computer
 	if err := tx.Where("pc_number = ?", pcNumber).First(&computer).Error; err != nil {
 		tx.Rollback()
 		return nil, errors.ErrComputerNotFound
 	}
 
 	// Проверяем, свободен ли компьютер
-	if computer.Status == models.Busy {
+	if computer.Status == models2.Busy {
 		tx.Rollback()
 		return nil, errors.ErrPCBusy
 	}
@@ -68,11 +68,11 @@ func (r *PostgresSessionRepo) StartSession(ctx context.Context, userID int64, pc
 	endTime := startTime.Add(time.Duration(tariff.Duration) * time.Minute)
 
 	// Создаем новую сессию
-	session := &models.Session{
+	session := &models2.Session{
 		UserID:    userID,
 		PCNumber:  pcNumber,
 		TariffID:  tariffID,
-		Status:    models.Active,
+		Status:    models2.Active,
 		StartTime: startTime,
 		EndTime:   &endTime,
 	}
@@ -82,7 +82,7 @@ func (r *PostgresSessionRepo) StartSession(ctx context.Context, userID int64, pc
 	}
 
 	// Обновляем статус компьютера
-	if err := tx.Model(&models.Computer{}).Where("pc_number = ?", pcNumber).Update("status", models.Busy).Error; err != nil {
+	if err := tx.Model(&models2.Computer{}).Where("pc_number = ?", pcNumber).Update("status", models2.Busy).Error; err != nil {
 		tx.Rollback()
 		return nil, errors.ErrUpdateComputerStatus
 	}
@@ -110,20 +110,20 @@ func (r *PostgresSessionRepo) EndSession(ctx context.Context, sessionID int64) e
 	}
 
 	// Находим сессию
-	var session models.Session
+	var session models2.Session
 	if err := tx.Where("id = ?", sessionID).First(&session).Error; err != nil {
 		tx.Rollback()
 		return errors.ErrSessionNotFound
 	}
 
 	// Завершаем сессию
-	if err := tx.Model(&models.Session{}).Where("id = ?", sessionID).Update("status", models.Finished).Error; err != nil {
+	if err := tx.Model(&models2.Session{}).Where("id = ?", sessionID).Update("status", models2.Finished).Error; err != nil {
 		tx.Rollback()
 		return errors.ErrUpdateSession
 	}
 
 	// Освобождаем компьютер
-	if err := tx.Model(&models.Computer{}).Where("pc_number = ?", session.PCNumber).Update("status", models.Free).Error; err != nil {
+	if err := tx.Model(&models2.Computer{}).Where("pc_number = ?", session.PCNumber).Update("status", models2.Free).Error; err != nil {
 		tx.Rollback()
 		return errors.ErrUpdateComputer
 	}
@@ -142,13 +142,13 @@ func (r *PostgresSessionRepo) EndSession(ctx context.Context, sessionID int64) e
 	return nil
 }
 
-func (r *PostgresSessionRepo) GetActiveSessions(ctx context.Context) []*models.Session {
+func (r *PostgresSessionRepo) GetActiveSessions(ctx context.Context) []*models2.Session {
 	// Проверяем кеш
-	var sessions []*models.Session
+	var sessions []*models2.Session
 	keys, _ := r.redis.Keys(ctx, "session:*").Result()
 	if len(keys) > 0 {
 		for _, key := range keys {
-			var session models.Session
+			var session models2.Session
 			sessionJSON, _ := r.redis.Get(ctx, key).Result()
 			json.Unmarshal([]byte(sessionJSON), &session)
 			sessions = append(sessions, &session)

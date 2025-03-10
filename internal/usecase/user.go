@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"computer-club/internal/models"
 	"computer-club/internal/repository"
+	"computer-club/internal/repository/models"
 	"computer-club/pkg/errors"
 	"context"
 	"github.com/golang-jwt/jwt/v4"

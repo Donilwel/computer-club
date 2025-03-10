@@ -9,7 +9,7 @@ RUN go mod download
 COPY . .
 
 # Компилируем
-RUN go build -o club-service cmd/server/main.go
+RUN go build -o club-service cmd/app/main.go
 
 # Второй этап (минимальный контейнер)
 FROM debian:latest

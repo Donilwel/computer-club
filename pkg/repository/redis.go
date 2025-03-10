@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"computer-club/config"
+	"computer-club/internal/config"
 	"context"
 	"github.com/redis/go-redis/v9"
 	"log"

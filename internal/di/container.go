@@ -1,13 +1,13 @@
 package di
 
 import (
-	"computer-club/config"
+	"computer-club/internal/config"
 	"computer-club/internal/delivery/httpService"
 	"computer-club/internal/handlers"
-	"computer-club/internal/logger"
 	"computer-club/internal/middleware"
 	"computer-club/internal/repository"
 	"computer-club/internal/usecase"
+	"computer-club/pkg/logger"
 	repository2 "computer-club/pkg/repository"
 	"context"
 	"fmt"
@@ -101,9 +101,8 @@ func NewContainer() *Container {
 
 // RunServer запускает HTTP-сервер
 func (c *Container) RunServer(ctx context.Context) {
-	// Запускаем мониторинг сессий
-	fmt.Println("Server started on :", c.Cfg.ServerPort)
-	err := http.ListenAndServe(":"+c.Cfg.ServerPort, c.Router)
+	fmt.Println("Server started on :", c.Cfg.Server.HTTPPort)
+	err := http.ListenAndServe(":"+c.Cfg.Server.HTTPPort, c.Router)
 	if err != nil {
 		c.Log.Fatal("Server error: ", err)
 	}

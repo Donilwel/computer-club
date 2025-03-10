@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"computer-club/internal/middleware"
-	"computer-club/internal/models"
+	models2 "computer-club/internal/repository/models"
 	"computer-club/internal/usecase"
 	"computer-club/pkg/errors"
 	"encoding/json"
@@ -28,7 +28,7 @@ func (h walletHandler) PutMoneyOnWallet(w http.ResponseWriter, r *http.Request) 
 	h.log.Info("Запрос на отправку средств на счет игрока")
 
 	role, ok := r.Context().Value("role").(string)
-	if !ok || role != string(models.Admin) {
+	if !ok || role != string(models2.Admin) {
 		h.log.WithError(errors.ErrForbidden).Error("Ошибка при переводе: недостаточно прав")
 		middleware.WriteError(w, http.StatusForbidden, errors.ErrForbidden.Error())
 		return
@@ -51,7 +51,7 @@ func (h walletHandler) PutMoneyOnWallet(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	transaction, err := h.walletService.CreateTransaction(ctx, req.UserID, req.Amount, string(models.Add), -1)
+	transaction, err := h.walletService.CreateTransaction(ctx, req.UserID, req.Amount, string(models2.Add), -1)
 	if err != nil {
 		h.log.WithError(err).Error("Ошибка при создании модели транзакции")
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
