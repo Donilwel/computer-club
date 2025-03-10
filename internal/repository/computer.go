@@ -27,20 +27,22 @@ func (r *PostgresComputerRepo) GetComputers(ctx context.Context) ([]models.Compu
 	}
 	return computers, nil
 }
+
 func (r *PostgresComputerRepo) IsComputerAvailable(ctx context.Context, tx Transaction, number int) (bool, error) {
 	db := r.db
 	if tx != nil {
 		db = tx.DB()
 	}
-	var count int64
+
+	var computer models.Computer
 	if err := db.WithContext(ctx).
-		Model(&models.Computer{}).
-		Where("pc_number = ? AND status = ?", number, models.Free).
-		Count(&count).
-		Error; err != nil {
-		return false, errors.ErrPCBusy
+		Where("pc_number = ?", number).First(&computer).Error; err != nil {
+		return false, errors.ErrComputerNotFound
 	}
-	return count > 0, nil
+	if computer.Status == models.Busy {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (r *PostgresComputerRepo) MarkComputerFree(ctx context.Context, tx Transaction, pcNumber int) error {

@@ -54,12 +54,12 @@ func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumbe
 		return nil, errors.ErrSessionActive
 	}
 
-	pcExists, err := u.computerRepo.IsComputerAvailable(ctx, tx, pcNumber)
+	pcBusy, err := u.computerRepo.IsComputerAvailable(ctx, tx, pcNumber)
 	if err != nil {
 		return nil, err
 	}
-	if !pcExists {
-		return nil, errors.ErrComputerNotFound
+	if pcBusy {
+		return nil, errors.ErrPCBusy
 	}
 
 	tariff, err := u.tariffRepo.GetTariffByID(ctx, tariffID)
@@ -113,7 +113,7 @@ func (u *SessionUsecase) EndSession(ctx context.Context, sessionID int64) error 
 	}
 
 	if session.Status == models.Finished {
-		return errors.ErrPCBusy
+		return errors.ErrStatusSessionAlreadyFinished
 	}
 
 	err = u.sessionRepository.MarkSessionFinished(ctx, tx, sessionID)

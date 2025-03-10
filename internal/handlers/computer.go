@@ -19,6 +19,13 @@ type computerHandler struct {
 	log             *logrus.Logger
 }
 
+func NewComputerHandler(computerService usecase.ComputerService, log *logrus.Logger) ComputerHandler {
+	return &computerHandler{
+		computerService: computerService,
+		log:             log,
+	}
+}
+
 // GetComputersStatus возвращает статус компьютеров
 func (h computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -42,11 +49,4 @@ func (h computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(computers)
-}
-
-func NewComputerHandler(computerService usecase.ComputerService, log *logrus.Logger) ComputerHandler {
-	return &computerHandler{
-		computerService: computerService,
-		log:             log,
-	}
 }

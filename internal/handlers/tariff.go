@@ -21,6 +21,10 @@ type tariffHandler struct {
 	log           *logrus.Logger
 }
 
+func NewTariffHandler(tariffService usecase.TariffService, log *logrus.Logger) TariffHandler {
+	return &tariffHandler{tariffService: tariffService, log: log}
+}
+
 // GetTariff получение полного списка тарифов
 func (h tariffHandler) GetTariff(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -58,8 +62,4 @@ func (h tariffHandler) GetTariffByID(w http.ResponseWriter, r *http.Request) {
 	h.log.Info(w, http.StatusOK, "Получен тариф по id")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tariff)
-}
-
-func NewTariffHandler(tariffService usecase.TariffService, log *logrus.Logger) TariffHandler {
-	return &tariffHandler{tariffService: tariffService, log: log}
 }

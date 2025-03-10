@@ -132,6 +132,7 @@ func (r *PostgresSessionRepo) MarkSessionFinished(ctx context.Context, tx Transa
 	if tx != nil {
 		db = tx.DB()
 	}
+
 	err := db.WithContext(ctx).Model(&models.Session{}).
 		Where("id = ?", sessionID).
 		Update("status", models.Finished).Error
