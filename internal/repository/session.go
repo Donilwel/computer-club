@@ -13,12 +13,16 @@ import (
 )
 
 type SessionRepository interface {
-	EndSession(ctx context.Context, sessionID int64) error
 	GetActiveSessions(ctx context.Context) []*models.Session
-	GetSessionByID(ctx context.Context, sessionID int64) (*models.Session, error)
+	GetSessionByID(ctx context.Context, tx Transaction, sessionID int64) (*models.Session, error)
 	CheckStatus(session models.Session, status string) error
-	HasActiveSession(ctx context.Context, userID int64) (bool, error)
-	CreateSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
+	HasActiveSession(ctx context.Context, tx Transaction, userID int64) (bool, error)
+	CreateSession(ctx context.Context, tx Transaction, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
+	MarkSessionFinished(ctx context.Context, tx Transaction, sessionID int64) error
+	MarkComputerFree(ctx context.Context, tx Transaction, number int) error
+	CacheSession(ctx context.Context, session *models.Session) error
+	DeleteSessionCache(ctx context.Context, id int64) error
+	BeginTransaction(ctx context.Context) Transaction
 }
 
 type PostgresSessionRepo struct {
@@ -31,66 +35,31 @@ func NewPostgresSessionRepo(db *gorm.DB, redis *redis.Client) SessionRepository 
 	return &PostgresSessionRepo{db: db, redis: redis}
 }
 
-func (r *PostgresSessionRepo) GetSessionByID(ctx context.Context, sessionID int64) (*models.Session, error) {
+func (r *PostgresSessionRepo) BeginTransaction(ctx context.Context) Transaction {
+	return &GormTransaction{tx: r.db.WithContext(ctx).Begin()}
+}
+
+func (r *PostgresSessionRepo) GetSessionByID(ctx context.Context, tx Transaction, sessionID int64) (*models.Session, error) {
 	var session models.Session
-	if err := r.db.WithContext(ctx).Where("id = ?", sessionID).First(&session).Error; err != nil {
+	if err := tx.DB().WithContext(ctx).Where("id = ?", sessionID).First(&session).Error; err != nil {
 		return nil, errors.ErrSessionNotFound
 	}
 	return &session, nil
 }
 
-func (r *PostgresSessionRepo) HasActiveSession(ctx context.Context, userID int64) (bool, error) {
+func (r *PostgresSessionRepo) HasActiveSession(ctx context.Context, tx Transaction, userID int64) (bool, error) {
 	var count int64
-	err := r.db.Model(&models.Session{}).Where("user_id = ? AND status = ?", userID, models.Active).Count(&count).Error
+	err := tx.DB().WithContext(ctx).
+		Model(&models.Session{}).
+		Where("user_id = ? AND status = ?", userID, models.Active).
+		Count(&count).Error
 	return count > 0, err
 }
 
-func (r *PostgresSessionRepo) CheckStatus(sesion models.Session, status string) error {
-	if sesion.Status != models.SessionStatus(status) {
+func (r *PostgresSessionRepo) CheckStatus(session models.Session, status string) error {
+	if session.Status != models.SessionStatus(status) {
 		return errors.ErrFailedStatus
 	}
-	return nil
-}
-
-func (r *PostgresSessionRepo) EndSession(ctx context.Context, sessionID int64) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	// Начинаем транзакцию
-	tx := r.db.Begin()
-	if tx.Error != nil {
-		return errors.ErrStartTransaction
-	}
-
-	// Находим сессию
-	var session models.Session
-	if err := tx.WithContext(ctx).Where("id = ?", sessionID).First(&session).Error; err != nil {
-		tx.Rollback()
-		return errors.ErrSessionNotFound
-	}
-
-	// Завершаем сессию
-	if err := tx.WithContext(ctx).Model(&models.Session{}).Where("id = ?", sessionID).Update("status", models.Finished).Error; err != nil {
-		tx.Rollback()
-		return errors.ErrUpdateSession
-	}
-
-	// Освобождаем компьютер
-	if err := tx.WithContext(ctx).Model(&models.Computer{}).Where("pc_number = ?", session.PCNumber).Update("status", models.Free).Error; err != nil {
-		tx.Rollback()
-		return errors.ErrUpdateComputer
-	}
-
-	// Удаляем сессию из кеша
-	if err := r.redis.Del(ctx, getSessionKey(sessionID)).Err(); err != nil {
-		tx.Rollback()
-		return errors.ErrDeleteRedis
-	}
-	// Подтверждаем транзакцию
-	if err := tx.Commit().Error; err != nil {
-		return errors.ErrCommitData
-	}
-
 	return nil
 }
 
@@ -120,7 +89,7 @@ func (r *PostgresSessionRepo) GetActiveSessions(ctx context.Context) []*models.S
 	return sessions
 }
 
-func (r *PostgresSessionRepo) CreateSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
+func (r *PostgresSessionRepo) CreateSession(ctx context.Context, tx Transaction, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
 	startTime := time.Now()
 	endTime := startTime.Add(2 * time.Hour)
 
@@ -133,12 +102,12 @@ func (r *PostgresSessionRepo) CreateSession(ctx context.Context, userID int64, p
 		EndTime:   &endTime,
 	}
 
-	if err := r.db.WithContext(ctx).Create(session).Error; err != nil {
+	if err := tx.DB().WithContext(ctx).Create(session).Error; err != nil {
 		return nil, errors.ErrCreatedSession
 	}
 
 	// Обновляем статус ПК
-	if err := r.db.WithContext(ctx).Model(&models.Computer{}).
+	if err := tx.DB().WithContext(ctx).Model(&models.Computer{}).
 		Where("pc_number = ?", pcNumber).
 		Update("status", models.Busy).Error; err != nil {
 		return nil, errors.ErrUpdateComputerStatus
@@ -147,7 +116,44 @@ func (r *PostgresSessionRepo) CreateSession(ctx context.Context, userID int64, p
 	return session, nil
 }
 
-// Вспомогательная функция для генерации ключа Redis
+func (r *PostgresSessionRepo) MarkSessionFinished(ctx context.Context, tx Transaction, sessionID int64) error {
+	err := tx.DB().WithContext(ctx).Model(&models.Session{}).
+		Where("id = ?", sessionID).
+		Update("status", models.Finished).Error
+	if err != nil {
+		return errors.ErrUpdateSession
+	}
+	return nil
+}
+
+func (r *PostgresSessionRepo) MarkComputerFree(ctx context.Context, tx Transaction, pcNumber int) error {
+	err := tx.DB().WithContext(ctx).Model(&models.Computer{}).
+		Where("pc_number = ?", pcNumber).
+		Update("status", models.Free).Error
+	if err != nil {
+		return errors.ErrUpdateComputerStatus
+	}
+	return nil
+}
+
+func (r *PostgresSessionRepo) CacheSession(ctx context.Context, session *models.Session) error {
+	sessionJSON, err := json.Marshal(session)
+	if err != nil {
+		return err
+	}
+	cacheKey := getSessionKey(session.ID)
+
+	err = r.redis.Set(ctx, cacheKey, sessionJSON, 24*time.Hour).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *PostgresSessionRepo) DeleteSessionCache(ctx context.Context, sessionID int64) error {
+	return r.redis.Del(ctx, getSessionKey(sessionID)).Err()
+}
+
 func getSessionKey(sessionID int64) string {
 	return "session:" + fmt.Sprint(sessionID)
 }

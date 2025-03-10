@@ -12,8 +12,8 @@ type WalletRepository interface {
 	GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error)
 	CreateWallet(ctx context.Context, wallet *models2.Wallet) error
 	Deposit(ctx context.Context, userID int64, amount float64) error
-	Withdraw(tx *gorm.DB, userID int64, amount float64) error
-	CreateTransaction(tx *gorm.DB, userID int64, amount float64, typ string, tariff *models2.Tariff) (*models2.Transaction, error)
+	Withdraw(ctx context.Context, tx Transaction, userID int64, amount float64) error
+	CreateTransaction(ctx context.Context, tx Transaction, userID int64, amount float64, typ string, tariff *models2.Tariff) (*models2.Transaction, error)
 }
 
 type PostgresWalletRepo struct {
@@ -24,10 +24,7 @@ func NewPostgresWalletRepo(db *gorm.DB) WalletRepository {
 	return &PostgresWalletRepo{db: db}
 }
 
-func (r *PostgresWalletRepo) CreateTransaction(tx *gorm.DB, userID int64, amount float64, typ string, tariff *models2.Tariff) (*models2.Transaction, error) {
-	if tx == nil {
-		tx = r.db
-	}
+func (r *PostgresWalletRepo) CreateTransaction(ctx context.Context, tx Transaction, userID int64, amount float64, typ string, tariff *models2.Tariff) (*models2.Transaction, error) {
 	var tariffID int64
 	if tariff == nil {
 		tariffID = -1
@@ -41,7 +38,7 @@ func (r *PostgresWalletRepo) CreateTransaction(tx *gorm.DB, userID int64, amount
 		Type:     models2.TransactionType(typ),
 		TariffID: tariffID,
 	}
-	if err := tx.Create(&transaction).Error; err != nil {
+	if err := tx.DB().WithContext(ctx).Create(&transaction).Error; err != nil {
 		return nil, errors.ErrCreateTransaction
 	}
 	return &transaction, nil
@@ -58,11 +55,8 @@ func (r *PostgresWalletRepo) Deposit(ctx context.Context, userID int64, amount f
 	return nil
 }
 
-func (r *PostgresWalletRepo) Withdraw(tx *gorm.DB, userID int64, amount float64) error {
-	if tx == nil {
-		tx = r.db
-	}
-	err := tx.Model(&models2.Wallet{}).
+func (r *PostgresWalletRepo) Withdraw(ctx context.Context, tx Transaction, userID int64, amount float64) error {
+	err := tx.DB().WithContext(ctx).Model(&models2.Wallet{}).
 		Where("user_id = ? AND balance >= ?", userID, amount).
 		Update("balance", gorm.Expr("balance - ?", amount)).Error
 	if err != nil {

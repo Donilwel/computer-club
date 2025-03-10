@@ -70,7 +70,7 @@ func (u *WalletUsecase) Withdraw(ctx context.Context, userID int64, amount float
 	if balance < amount {
 		return errors.ErrInsufficientFunds
 	}
-	return u.walletRepo.Withdraw(nil, userID, amount)
+	return u.walletRepo.Withdraw(ctx, nil, userID, amount)
 }
 
 func (u *WalletUsecase) GetBalance(ctx context.Context, userID int64) (float64, error) {
@@ -87,7 +87,7 @@ func (u *WalletUsecase) CreateTransaction(ctx context.Context, userID int64, amo
 		if err != nil {
 			return nil, err
 		}
-		return u.walletRepo.CreateTransaction(nil, userID, amount, typ, tariff)
+		return u.walletRepo.CreateTransaction(ctx, nil, userID, amount, typ, tariff)
 	}
-	return u.walletRepo.CreateTransaction(nil, userID, amount, typ, nil)
+	return u.walletRepo.CreateTransaction(ctx, nil, userID, amount, typ, nil)
 }

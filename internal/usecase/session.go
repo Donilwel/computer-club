@@ -42,7 +42,10 @@ func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumbe
 		return nil, errors.ErrUserNotFound
 	}
 
-	exists, err := u.sessionRepository.HasActiveSession(ctx, userID)
+	tx := u.sessionRepository.BeginTransaction(ctx)
+	defer tx.Rollback()
+
+	exists, err := u.sessionRepository.HasActiveSession(ctx, tx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +53,7 @@ func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumbe
 		return nil, errors.ErrSessionActive
 	}
 
-	pcExists, err := u.computerRepo.IsComputerAvailable(ctx, pcNumber)
+	pcExists, err := u.computerRepo.IsComputerAvailable(ctx, tx, pcNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -71,26 +74,68 @@ func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumbe
 		return nil, errors.ErrInsufficientFunds
 	}
 
-	err = u.walletRepo.Withdraw(nil, userID, tariff.Price)
+	err = u.walletRepo.Withdraw(ctx, tx, userID, tariff.Price)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = u.walletRepo.CreateTransaction(nil, userID, tariff.Price, string(models.Buy), tariff)
+	_, err = u.walletRepo.CreateTransaction(ctx, tx, userID, tariff.Price, string(models.Buy), tariff)
 	if err != nil {
 		return nil, err
 	}
 
-	session, err := u.sessionRepository.CreateSession(ctx, userID, pcNumber, tariffID)
+	session, err := u.sessionRepository.CreateSession(ctx, tx, userID, pcNumber, tariffID)
 	if err != nil {
 		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, errors.ErrCommitData
+	}
+
+	err = u.sessionRepository.CacheSession(ctx, session)
+	if err != nil {
+		return nil, errors.ErrCacheSession
 	}
 
 	return session, nil
 }
 
 func (u *SessionUsecase) EndSession(ctx context.Context, sessionID int64) error {
-	return u.sessionRepository.EndSession(ctx, sessionID)
+	tx := u.sessionRepository.BeginTransaction(ctx)
+	defer tx.Rollback()
+
+	session, err := u.sessionRepository.GetSessionByID(ctx, tx, sessionID)
+	if err != nil {
+		return errors.ErrSessionNotFound
+	}
+
+	if session.Status == models.Finished {
+		return errors.ErrPCBusy
+	}
+
+	err = u.sessionRepository.MarkSessionFinished(ctx, tx, sessionID)
+	if err != nil {
+		return errors.ErrUpdateSession
+	}
+
+	err = u.sessionRepository.MarkComputerFree(ctx, tx, session.PCNumber)
+	if err != nil {
+		return errors.ErrUpdateComputer
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return errors.ErrCommitData
+	}
+
+	err = u.sessionRepository.DeleteSessionCache(ctx, sessionID)
+	if err != nil {
+		return errors.ErrDeleteRedis
+	}
+
+	return nil
 }
 
 func (u *SessionUsecase) GetActiveSessions(ctx context.Context) []*models.Session {
