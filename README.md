@@ -189,54 +189,90 @@ computer-club
   ```
 
 
-## Ошибки API
-Список возможных ошибок, которые могут возникнуть при работе с API:
+# Ошибки в проекте
 
-- **Аутентификация и авторизация**:
-    - `ErrUserNotFound` – пользователь не найден.
-    - `ErrForbidden` – доступ запрещён (необходима роль администратора).
-    - `ErrWrongIDFromJWT` – неверный идентификатор пользователя в токене.
-    - `ErrWrongRoleFromJWT` – некорректная роль в токене.
-    - `ErrInvalidCredentials` – неверные email или пароль.
-    - `ErrTokenGeneration` – ошибка генерации токена.
-    - `ErrMissingToken` – токен отсутствует в заголовке запроса.
-    - `ErrWrongToken` – неверный токен.
+## Описание
+В проекте используются предопределённые ошибки для обработки различных ситуаций. Они сгруппированы по категориям для удобства использования и поддержки.
 
-- **Регистрация пользователей**:
-    - `ErrUserAlreadyExists` – пользователь уже зарегистрирован.
-    - `ErrUsernameTaken` – пользователь с таким никнеймом уже существует.
-    - `ErrInvalidRole` – некорректная роль пользователя.
-    - `ErrNameEmpty` – имя не может быть пустым.
-    - `ErrEmailEmpty` – почта не может быть пустой.
-    - `ErrPasswordEmpty` – пароль не может быть пустым.
-    - `ErrPasswordTooShort` – пароль должен содержать минимум 6 символов.
-    - `ErrHashedPassword` – ошибка при хешировании пароля.
-    - `ErrRegistration` – ошибка регистрации пользователя.
+## Категории ошибок
 
-- **Игровые сессии**:
-    - `ErrSessionNotFound` – сессия не найдена.
-    - `ErrSessionActive` – у пользователя уже есть активная сессия.
-    - `ErrPCBusy` – компьютер уже занят.
-    - `ErrInvalidSessionID` – некорректный идентификатор сессии.
-    - `ErrCreatedSession` – ошибка при создании сессии в базе данных.
-    - `ErrUpdateSession` – ошибка обновления сессии в базе данных.
+### 1. Ошибки аутентификации и авторизации
+- `ErrUserNotFound` — пользователь не найден
+- `ErrForbidden` — ошибка доступа, необходима роль администратора
+- `ErrWrongIDFromJWT` — неправильный `user_id` в токене
+- `ErrWrongRoleFromJWT` — неправильная роль в токене
+- `ErrInvalidRole` — некорректная роль
+- `ErrUserAlreadyExists` — пользователь уже существует
+- `ErrInvalidCredentials` — неверный email или пароль
+- `ErrUsernameTaken` — пользователь с таким никнеймом уже существует
+- `ErrMissingToken` — токен не найден в заголовке
+- `ErrWrongToken` — токен неверный
+- `ErrTokenGeneration` — ошибка генерации токена
 
-- **Компьютеры и тарифы**:
-    - `ErrFindComputer` – ошибка при поиске компьютера в базе данных.
-    - `ErrComputerNotFound` – компьютер не найден.
-    - `ErrUpdateComputerStatus` – ошибка обновления статуса компьютера.
-    - `ErrFindTariffs` – ошибка поиска тарифов в базе данных.
-    - `ErrFindTariffByID` – ошибка поиска тарифа по ID.
-    - `ErrInvalidTariffID` – некорректный идентификатор тарифа.
-    - `ErrTariffNotFound` – тариф не найден.
+### 2. Ошибки при работе с пользователем
+- `ErrHashedPassword` — проблема с хешированием пароля
+- `ErrPasswordTooShort` — пароль должен содержать минимум 6 символов
+- `ErrCreatedUser` — ошибка при создании пользователя в базе данных
+- `ErrFindUser` — ошибка при поиске пользователя в базе данных
+- `ErrNameEmpty` — имя не может быть пустым
+- `ErrPasswordEmpty` — пароль не может быть пустым
+- `ErrEmailEmpty` — почта не может быть пустой
+- `ErrRegistration` — ошибка при регистрации пользователя
 
-- **Финансовые операции**:
-    - `ErrInvalidAmount` – сумма должна быть больше нуля.
-    - `ErrInsufficientFunds` – недостаточно средств на балансе.
-    - `ErrToDeposit` – ошибка при пополнении баланса.
-    - `ErrCheckBalance` – ошибка проверки баланса.
-    - `ErrCheckTransaction` – ошибка при просмотре транзакций в базе данных.
-    - `ErrWithdraw` – ошибка при выводе средств.
-    - `ErrWalletAlreadyExists` – кошелек уже существует.
-    - `ErrCreateWallet` – ошибка при создании кошелька.
-    - `ErrCommitData` – ошибка сохранения данных в базе данных.
+### 3. Ошибки сессий
+- `ErrSessionNotFound` — сессия не найдена
+- `ErrSessionActive` — у пользователя уже есть активная сессия
+- `ErrInvalidSessionID` — некорректный идентификатор сессии
+- `ErrCreatedSession` — ошибка при создании сессии в базе данных
+- `ErrUpdateSession` — ошибка обновления сессии в базе данных
+- `ErrSessionAlreadyFinished` — статус сессии уже завершен
+- `ErrStatusSessionAlreadyFinished` — запрашиваемая сессия уже закончена
+- `ErrFailedStatus` — статус запрашиваемой сессии неверный
+- `ErrCacheSession` — ошибка добавления в кэш
+
+### 4. Ошибки компьютеров
+- `ErrUpdateComputer` — ошибка обновления компьютера в базе данных
+- `ErrFindComputer` — ошибка при поиске компьютера в базе данных
+- `ErrComputerNotFound` — компьютер не найден
+- `ErrPCBusy` — компьютер уже занят
+- `ErrUpdateComputerStatus` — ошибка при обновлении статуса компьютера
+
+### 5. Ошибки тарифов
+- `ErrFindTariffByID` — ошибка при поиске тарифа в базе данных по ID
+- `ErrInvalidTariffID` — ошибка чтения ID тарифа
+- `ErrTariffNotFound` — тариф не найден
+- `ErrFindTariffs` — ошибка при поиске тарифов в базе данных
+
+### 6. Ошибки транзакций и кошелька
+- `ErrInvalidAmount` — количество денег должно быть больше нуля
+- `ErrInsufficientFunds` — баланс меньше, чем сумма, которую хотят вывести
+- `ErrToDeposit` — ошибка при обновлении суммы в кошельке
+- `ErrCheckBalance` — ошибка при проверке баланса, кошелек не найден
+- `ErrCheckTransaction` — ошибка при просмотре транзакций в базе данных
+- `ErrWithdraw` — ошибка при выводе средств
+- `ErrWalletAlreadyExists` — ошибка при создании кошелька: он уже существует
+- `ErrCreateWallet` — ошибка при создании кошелька в базе данных
+- `ErrInvalidUserID` — ошибка чтения ID пользователя
+- `ErrCreateTransaction` — ошибка создания модели транзакции
+
+### 7. Ошибки базы данных
+- `ErrCommitData` — ошибка при сохранении изменений в базе данных
+- `ErrStartTransaction` — ошибка при создании транзакции
+
+### 8. Ошибки кэша и Redis
+- `ErrDeleteRedis` — ошибка удаления данных из Redis
+
+### 9. Общие ошибки
+- `ErrJSONRequest` — ошибка JSON запроса
+- `ErrUnexpected` — неизвестная ошибка
+
+## Использование ошибок
+
+Ошибки объявлены в пакете и могут быть использованы следующим образом:
+
+```go
+if err == ErrUserNotFound {
+    log.Println("Пользователь не найден")
+    return http.StatusNotFound, ErrUserNotFound
+}
+```

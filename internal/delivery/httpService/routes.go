@@ -25,10 +25,10 @@ func RegisterRoutes(
 		protected.Use(middleware.AuthMiddleware)
 
 		protected.Get("/info", userHandler.InfoUser)
+		protected.Get("/sessions/active", sessionHandler.GetActiveSessions)
 		protected.Post("/session/start", sessionHandler.StartSession)
 		protected.Post("/session/end", sessionHandler.EndSession)
 		protected.Put("/pay", walletHandler.PutMoneyOnWallet)
-		protected.Get("/sessions/active", sessionHandler.GetActiveSessions)
 		protected.Get("/computers/status", computerHandler.GetComputersStatus)
 	})
 }
