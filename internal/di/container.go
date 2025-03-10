@@ -8,14 +8,10 @@ import (
 	"computer-club/internal/repository"
 	"computer-club/internal/usecase"
 	"computer-club/pkg/logger"
-	repository2 "computer-club/pkg/repository"
-	"context"
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 // Container отвечает за хранение и инициализацию зависимостей
@@ -48,9 +44,9 @@ func NewContainer() *Container {
 	log := logger.NewLogger()
 
 	// Подключение к БД и Redis
-	db := repository2.NewPostgresDB(cfg)
-	redisClient := repository2.NewRedisClient(cfg)
-	repository2.Migrate(db)
+	db := repository.NewPostgresDB(cfg)
+	redisClient := repository.NewRedisClient(cfg)
+	repository.Migrate(db)
 
 	// Инициализация репозиториев
 	userRepo := repository.NewPostgresUserRepo(db)
@@ -96,14 +92,5 @@ func NewContainer() *Container {
 		TariffUsecase:   &tariffUsecase,
 		WalletUsecase:   &walletUsecase,
 		Router:          r,
-	}
-}
-
-// RunServer запускает HTTP-сервер
-func (c *Container) RunServer(ctx context.Context) {
-	fmt.Println("Server started on :", c.Cfg.Server.HTTPPort)
-	err := http.ListenAndServe(":"+c.Cfg.Server.HTTPPort, c.Router)
-	if err != nil {
-		c.Log.Fatal("Server error: ", err)
 	}
 }
