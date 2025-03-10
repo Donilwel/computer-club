@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"computer-club/internal/repository"
-	models2 "computer-club/internal/repository/models"
+	"computer-club/internal/repository/models"
 	"computer-club/pkg/errors"
 	"context"
 	"log"
@@ -10,9 +10,9 @@ import (
 )
 
 type SessionService interface {
-	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models2.Session, error)
+	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
 	EndSession(ctx context.Context, sessionID int64) error
-	GetActiveSessions(ctx context.Context) []*models2.Session
+	GetActiveSessions(ctx context.Context) []*models.Session
 	MonitorSessions(ctx context.Context)
 }
 
@@ -20,30 +20,68 @@ type SessionUsecase struct {
 	sessionRepository repository.SessionRepository
 	userRepo          repository.UserRepository
 	computerRepo      repository.ComputerRepository
-	walletService     WalletService
+	tariffRepo        repository.TariffRepository
+	walletRepo        repository.WalletRepository
 }
 
 func NewSessionUsecase(sessionRepository repository.SessionRepository,
 	userRepo repository.UserRepository,
 	computerRepo repository.ComputerRepository,
-	walletService WalletService) SessionService {
+	tariffRepo repository.TariffRepository,
+	walletRepo repository.WalletRepository) SessionService {
 	return &SessionUsecase{sessionRepository: sessionRepository,
-		userRepo:      userRepo,
-		computerRepo:  computerRepo,
-		walletService: walletService}
+		userRepo:     userRepo,
+		computerRepo: computerRepo,
+		tariffRepo:   tariffRepo,
+		walletRepo:   walletRepo}
 }
 
-func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models2.Session, error) {
+func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
 	_, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return nil, errors.ErrUserNotFound
 	}
-	session, err := u.sessionRepository.StartSession(ctx, userID, pcNumber, tariffID)
+
+	exists, err := u.sessionRepository.HasActiveSession(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, errors.ErrSessionActive
+	}
+
+	pcExists, err := u.computerRepo.IsComputerAvailable(ctx, pcNumber)
+	if err != nil {
+		return nil, err
+	}
+	if !pcExists {
+		return nil, errors.ErrComputerNotFound
+	}
+
+	tariff, err := u.tariffRepo.GetTariffByID(ctx, tariffID)
+	if err != nil {
+		return nil, errors.ErrTariffNotFound
+	}
+
+	balance, err := u.walletRepo.GetBalance(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if balance < tariff.Price {
+		return nil, errors.ErrInsufficientFunds
+	}
+
+	err = u.walletRepo.Withdraw(nil, userID, tariff.Price)
 	if err != nil {
 		return nil, err
 	}
 
-	err = u.walletService.ChargeForSession(ctx, userID, tariffID)
+	_, err = u.walletRepo.CreateTransaction(nil, userID, tariff.Price, string(models.Buy), tariff)
+	if err != nil {
+		return nil, err
+	}
+
+	session, err := u.sessionRepository.CreateSession(ctx, userID, pcNumber, tariffID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +93,7 @@ func (u *SessionUsecase) EndSession(ctx context.Context, sessionID int64) error 
 	return u.sessionRepository.EndSession(ctx, sessionID)
 }
 
-func (u *SessionUsecase) GetActiveSessions(ctx context.Context) []*models2.Session {
+func (u *SessionUsecase) GetActiveSessions(ctx context.Context) []*models.Session {
 	return u.sessionRepository.GetActiveSessions(ctx)
 }
 
@@ -83,7 +121,7 @@ func (u *SessionUsecase) checkAndCloseExpiredSessions(ctx context.Context) {
 			log.Printf("Завершаем сессию %d (пользователь %d)", session.ID, session.UserID)
 
 			// Обновление статуса компьютера
-			if err := u.computerRepo.UpdateStatus(ctx, session.PCNumber, models2.Free); err != nil {
+			if err := u.computerRepo.UpdateStatus(ctx, session.PCNumber, models.Free); err != nil {
 				log.Printf("Не удалось обновить статус компьютера для сессии %d: %v", session.ID, err)
 			}
 

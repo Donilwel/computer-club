@@ -12,7 +12,6 @@ type WalletService interface {
 	Withdraw(ctx context.Context, userID int64, amount float64) error
 	GetBalance(ctx context.Context, userID int64) (float64, error)
 	GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error)
-	ChargeForSession(ctx context.Context, userID int64, tariffID int64) error
 	CreateTransaction(ctx context.Context, userID int64, amount float64, typ string, tariffID int64) (*models2.Transaction, error)
 	CreateWallet(ctx context.Context, userID int64) error
 }
@@ -45,33 +44,6 @@ func (u *WalletUsecase) CreateWallet(ctx context.Context, userID int64) error {
 	return u.walletRepo.CreateWallet(ctx, wallet)
 }
 
-func (u *WalletUsecase) ChargeForSession(ctx context.Context, userID int64, tariffID int64) error {
-	tariff, err := u.tariffRepo.GetTariffByID(ctx, tariffID)
-	if err != nil {
-		return errors.ErrTariffNotFound
-	}
-
-	// Проверяем баланс пользователя
-	balance, err := u.walletRepo.GetBalance(ctx, userID)
-	if err != nil {
-		return err
-	}
-	if balance < tariff.Price {
-		return errors.ErrInsufficientFunds
-	}
-	// Списываем средства
-	if err := u.walletRepo.Withdraw(ctx, userID, tariff.Price); err != nil {
-		return err
-	}
-
-	_, err = u.walletRepo.CreateTransaction(ctx, userID, tariff.Price, string(models2.Buy), tariff)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (u *WalletUsecase) Deposit(ctx context.Context, userID int64, amount float64) error {
 	if amount <= 0 {
 		return errors.ErrInvalidAmount
@@ -98,7 +70,7 @@ func (u *WalletUsecase) Withdraw(ctx context.Context, userID int64, amount float
 	if balance < amount {
 		return errors.ErrInsufficientFunds
 	}
-	return u.walletRepo.Withdraw(ctx, userID, amount)
+	return u.walletRepo.Withdraw(nil, userID, amount)
 }
 
 func (u *WalletUsecase) GetBalance(ctx context.Context, userID int64) (float64, error) {
@@ -115,7 +87,7 @@ func (u *WalletUsecase) CreateTransaction(ctx context.Context, userID int64, amo
 		if err != nil {
 			return nil, err
 		}
-		return u.walletRepo.CreateTransaction(ctx, userID, amount, typ, tariff)
+		return u.walletRepo.CreateTransaction(nil, userID, amount, typ, tariff)
 	}
-	return u.walletRepo.CreateTransaction(ctx, userID, amount, typ, nil)
+	return u.walletRepo.CreateTransaction(nil, userID, amount, typ, nil)
 }

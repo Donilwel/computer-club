@@ -10,6 +10,7 @@ import (
 type ComputerRepository interface {
 	GetComputers(ctx context.Context) ([]models.Computer, error)
 	UpdateStatus(ctx context.Context, number int, free models.ComputerStatus) error
+	IsComputerAvailable(ctx context.Context, number int) (bool, error)
 }
 type PostgresComputerRepo struct {
 	db *gorm.DB
@@ -35,4 +36,15 @@ func (r *PostgresComputerRepo) GetComputers(ctx context.Context) ([]models.Compu
 		return nil, errors.ErrFindComputer
 	}
 	return computers, nil
+}
+func (r *PostgresComputerRepo) IsComputerAvailable(ctx context.Context, number int) (bool, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&models.Computer{}).
+		Where("pc_number = ? AND status = ?", number, models.Free).
+		Count(&count).
+		Error; err != nil {
+		return false, errors.ErrPCBusy
+	}
+	return count > 0, nil
 }

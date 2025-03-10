@@ -51,4 +51,5 @@ var (
 	ErrCreateWallet         = errors.New("ошибка при создании кошелька в базу данных")
 	ErrInvalidUserID        = errors.New("ошибка чтения id пользователя")
 	ErrCreateTransaction    = errors.New("ошибка создания модели транзакции")
+	ErrFailedStatus         = errors.New("статус запрашиваемой сессии неверный")
 )

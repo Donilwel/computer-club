@@ -18,7 +18,12 @@ func NewPostgresDB(cfg *config.Config) *gorm.DB {
 }
 
 func Migrate(db *gorm.DB) {
-	db.AutoMigrate(&models2.User{}, &models2.Session{}, &models2.Computer{}, &models2.Tariff{}, &models2.Wallet{}, &models2.Transaction{})
+	db.AutoMigrate(&models2.User{},
+		&models2.Session{},
+		&models2.Computer{},
+		&models2.Tariff{},
+		&models2.Wallet{},
+		&models2.Transaction{})
 
 	// Проверяем, есть ли компьютеры в базе
 	var count int64
