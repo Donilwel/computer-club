@@ -9,8 +9,8 @@ import (
 
 type ComputerRepository interface {
 	GetComputers(ctx context.Context) ([]models.Computer, error)
-	UpdateStatus(ctx context.Context, number int, free models.ComputerStatus) error
 	IsComputerAvailable(ctx context.Context, tx Transaction, number int) (bool, error)
+	MarkComputerFree(ctx context.Context, tx Transaction, number int) error
 }
 type PostgresComputerRepo struct {
 	db *gorm.DB
@@ -20,16 +20,6 @@ func NewComputerRepository(db *gorm.DB) ComputerRepository {
 	return &PostgresComputerRepo{db: db}
 }
 
-func (r *PostgresComputerRepo) UpdateStatus(ctx context.Context, number int, free models.ComputerStatus) error {
-	var computer models.Computer
-	if err := r.db.WithContext(ctx).First(&computer, "id = ?", number).Error; err != nil {
-		return errors.ErrFindComputer
-	}
-	if err := r.db.WithContext(ctx).Model(&computer).Update("status", free).Error; err != nil {
-		return errors.ErrUpdateComputer
-	}
-	return nil
-}
 func (r *PostgresComputerRepo) GetComputers(ctx context.Context) ([]models.Computer, error) {
 	var computers []models.Computer
 	if err := r.db.WithContext(ctx).Find(&computers).Error; err != nil {
@@ -38,8 +28,12 @@ func (r *PostgresComputerRepo) GetComputers(ctx context.Context) ([]models.Compu
 	return computers, nil
 }
 func (r *PostgresComputerRepo) IsComputerAvailable(ctx context.Context, tx Transaction, number int) (bool, error) {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
 	var count int64
-	if err := tx.DB().WithContext(ctx).
+	if err := db.WithContext(ctx).
 		Model(&models.Computer{}).
 		Where("pc_number = ? AND status = ?", number, models.Free).
 		Count(&count).
@@ -47,4 +41,18 @@ func (r *PostgresComputerRepo) IsComputerAvailable(ctx context.Context, tx Trans
 		return false, errors.ErrPCBusy
 	}
 	return count > 0, nil
+}
+
+func (r *PostgresComputerRepo) MarkComputerFree(ctx context.Context, tx Transaction, pcNumber int) error {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
+	err := db.WithContext(ctx).Model(&models.Computer{}).
+		Where("pc_number = ?", pcNumber).
+		Update("status", models.Free).Error
+	if err != nil {
+		return errors.ErrUpdateComputerStatus
+	}
+	return nil
 }

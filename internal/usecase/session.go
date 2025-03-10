@@ -49,6 +49,7 @@ func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumbe
 	if err != nil {
 		return nil, err
 	}
+
 	if exists {
 		return nil, errors.ErrSessionActive
 	}
@@ -120,7 +121,7 @@ func (u *SessionUsecase) EndSession(ctx context.Context, sessionID int64) error 
 		return errors.ErrUpdateSession
 	}
 
-	err = u.sessionRepository.MarkComputerFree(ctx, tx, session.PCNumber)
+	err = u.computerRepo.MarkComputerFree(ctx, tx, session.PCNumber)
 	if err != nil {
 		return errors.ErrUpdateComputer
 	}
@@ -166,7 +167,7 @@ func (u *SessionUsecase) checkAndCloseExpiredSessions(ctx context.Context) {
 			log.Printf("Завершаем сессию %d (пользователь %d)", session.ID, session.UserID)
 
 			// Обновление статуса компьютера
-			if err := u.computerRepo.UpdateStatus(ctx, session.PCNumber, models.Free); err != nil {
+			if err := u.computerRepo.MarkComputerFree(ctx, nil, session.PCNumber); err != nil {
 				log.Printf("Не удалось обновить статус компьютера для сессии %d: %v", session.ID, err)
 			}
 

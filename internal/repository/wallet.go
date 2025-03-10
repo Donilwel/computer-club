@@ -25,6 +25,10 @@ func NewPostgresWalletRepo(db *gorm.DB) WalletRepository {
 }
 
 func (r *PostgresWalletRepo) CreateTransaction(ctx context.Context, tx Transaction, userID int64, amount float64, typ string, tariff *models2.Tariff) (*models2.Transaction, error) {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
 	var tariffID int64
 	if tariff == nil {
 		tariffID = -1
@@ -38,7 +42,7 @@ func (r *PostgresWalletRepo) CreateTransaction(ctx context.Context, tx Transacti
 		Type:     models2.TransactionType(typ),
 		TariffID: tariffID,
 	}
-	if err := tx.DB().WithContext(ctx).Create(&transaction).Error; err != nil {
+	if err := db.WithContext(ctx).Create(&transaction).Error; err != nil {
 		return nil, errors.ErrCreateTransaction
 	}
 	return &transaction, nil
@@ -56,7 +60,11 @@ func (r *PostgresWalletRepo) Deposit(ctx context.Context, userID int64, amount f
 }
 
 func (r *PostgresWalletRepo) Withdraw(ctx context.Context, tx Transaction, userID int64, amount float64) error {
-	err := tx.DB().WithContext(ctx).Model(&models2.Wallet{}).
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
+	err := db.WithContext(ctx).Model(&models2.Wallet{}).
 		Where("user_id = ? AND balance >= ?", userID, amount).
 		Update("balance", gorm.Expr("balance - ?", amount)).Error
 	if err != nil {

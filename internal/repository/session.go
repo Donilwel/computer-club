@@ -19,7 +19,6 @@ type SessionRepository interface {
 	HasActiveSession(ctx context.Context, tx Transaction, userID int64) (bool, error)
 	CreateSession(ctx context.Context, tx Transaction, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
 	MarkSessionFinished(ctx context.Context, tx Transaction, sessionID int64) error
-	MarkComputerFree(ctx context.Context, tx Transaction, number int) error
 	CacheSession(ctx context.Context, session *models.Session) error
 	DeleteSessionCache(ctx context.Context, id int64) error
 	BeginTransaction(ctx context.Context) Transaction
@@ -40,16 +39,24 @@ func (r *PostgresSessionRepo) BeginTransaction(ctx context.Context) Transaction 
 }
 
 func (r *PostgresSessionRepo) GetSessionByID(ctx context.Context, tx Transaction, sessionID int64) (*models.Session, error) {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
 	var session models.Session
-	if err := tx.DB().WithContext(ctx).Where("id = ?", sessionID).First(&session).Error; err != nil {
+	if err := db.WithContext(ctx).Where("id = ?", sessionID).First(&session).Error; err != nil {
 		return nil, errors.ErrSessionNotFound
 	}
 	return &session, nil
 }
 
 func (r *PostgresSessionRepo) HasActiveSession(ctx context.Context, tx Transaction, userID int64) (bool, error) {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
 	var count int64
-	err := tx.DB().WithContext(ctx).
+	err := db.WithContext(ctx).
 		Model(&models.Session{}).
 		Where("user_id = ? AND status = ?", userID, models.Active).
 		Count(&count).Error
@@ -90,6 +97,10 @@ func (r *PostgresSessionRepo) GetActiveSessions(ctx context.Context) []*models.S
 }
 
 func (r *PostgresSessionRepo) CreateSession(ctx context.Context, tx Transaction, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
 	startTime := time.Now()
 	endTime := startTime.Add(2 * time.Hour)
 
@@ -102,12 +113,12 @@ func (r *PostgresSessionRepo) CreateSession(ctx context.Context, tx Transaction,
 		EndTime:   &endTime,
 	}
 
-	if err := tx.DB().WithContext(ctx).Create(session).Error; err != nil {
+	if err := db.WithContext(ctx).Create(session).Error; err != nil {
 		return nil, errors.ErrCreatedSession
 	}
 
 	// Обновляем статус ПК
-	if err := tx.DB().WithContext(ctx).Model(&models.Computer{}).
+	if err := db.WithContext(ctx).Model(&models.Computer{}).
 		Where("pc_number = ?", pcNumber).
 		Update("status", models.Busy).Error; err != nil {
 		return nil, errors.ErrUpdateComputerStatus
@@ -117,7 +128,11 @@ func (r *PostgresSessionRepo) CreateSession(ctx context.Context, tx Transaction,
 }
 
 func (r *PostgresSessionRepo) MarkSessionFinished(ctx context.Context, tx Transaction, sessionID int64) error {
-	err := tx.DB().WithContext(ctx).Model(&models.Session{}).
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
+	err := db.WithContext(ctx).Model(&models.Session{}).
 		Where("id = ?", sessionID).
 		Update("status", models.Finished).Error
 	if err != nil {
@@ -125,17 +140,6 @@ func (r *PostgresSessionRepo) MarkSessionFinished(ctx context.Context, tx Transa
 	}
 	return nil
 }
-
-func (r *PostgresSessionRepo) MarkComputerFree(ctx context.Context, tx Transaction, pcNumber int) error {
-	err := tx.DB().WithContext(ctx).Model(&models.Computer{}).
-		Where("pc_number = ?", pcNumber).
-		Update("status", models.Free).Error
-	if err != nil {
-		return errors.ErrUpdateComputerStatus
-	}
-	return nil
-}
-
 func (r *PostgresSessionRepo) CacheSession(ctx context.Context, session *models.Session) error {
 	sessionJSON, err := json.Marshal(session)
 	if err != nil {
