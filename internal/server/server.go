@@ -20,14 +20,10 @@ type Server struct {
 // NewServer создаёт сервер с HTTP API
 func NewServer() *Server {
 	container := di.NewContainer()
-
-	httpSrv := &http.Server{
-		Addr:    ":" + container.Cfg.Server.HTTPPort,
-		Handler: container.Router,
-	}
+	httpSrv := NewHttpServer(container)
 
 	return &Server{
-		httpServer: httpSrv,
+		httpServer: httpSrv.server,
 		container:  container,
 	}
 }
