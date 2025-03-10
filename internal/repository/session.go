@@ -40,20 +40,20 @@ func (r *PostgresSessionRepo) StartSession(ctx context.Context, userID int64, pc
 
 	// Проверяем, есть ли активная сессия у пользователя
 	var activeSession models2.Session
-	if err := tx.Where("user_id = ? AND status = ?", userID, models2.Active).First(&activeSession).Error; err == nil {
+	if err := tx.WithContext(ctx).Where("user_id = ? AND status = ?", userID, models2.Active).First(&activeSession).Error; err == nil {
 		tx.Rollback()
 		return nil, errors.ErrSessionActive
 	}
 
 	var tariff models2.Tariff
-	if err := tx.First(&tariff, tariffID).Error; err != nil {
+	if err := tx.WithContext(ctx).First(&tariff, tariffID).Error; err != nil {
 		tx.Rollback()
 		return nil, errors.ErrTariffNotFound
 	}
 
 	// Проверяем, существует ли этот ПК
 	var computer models2.Computer
-	if err := tx.Where("pc_number = ?", pcNumber).First(&computer).Error; err != nil {
+	if err := tx.WithContext(ctx).Where("pc_number = ?", pcNumber).First(&computer).Error; err != nil {
 		tx.Rollback()
 		return nil, errors.ErrComputerNotFound
 	}
@@ -82,7 +82,7 @@ func (r *PostgresSessionRepo) StartSession(ctx context.Context, userID int64, pc
 	}
 
 	// Обновляем статус компьютера
-	if err := tx.Model(&models2.Computer{}).Where("pc_number = ?", pcNumber).Update("status", models2.Busy).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&models2.Computer{}).Where("pc_number = ?", pcNumber).Update("status", models2.Busy).Error; err != nil {
 		tx.Rollback()
 		return nil, errors.ErrUpdateComputerStatus
 	}
@@ -111,19 +111,19 @@ func (r *PostgresSessionRepo) EndSession(ctx context.Context, sessionID int64) e
 
 	// Находим сессию
 	var session models2.Session
-	if err := tx.Where("id = ?", sessionID).First(&session).Error; err != nil {
+	if err := tx.WithContext(ctx).Where("id = ?", sessionID).First(&session).Error; err != nil {
 		tx.Rollback()
 		return errors.ErrSessionNotFound
 	}
 
 	// Завершаем сессию
-	if err := tx.Model(&models2.Session{}).Where("id = ?", sessionID).Update("status", models2.Finished).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&models2.Session{}).Where("id = ?", sessionID).Update("status", models2.Finished).Error; err != nil {
 		tx.Rollback()
 		return errors.ErrUpdateSession
 	}
 
 	// Освобождаем компьютер
-	if err := tx.Model(&models2.Computer{}).Where("pc_number = ?", session.PCNumber).Update("status", models2.Free).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&models2.Computer{}).Where("pc_number = ?", session.PCNumber).Update("status", models2.Free).Error; err != nil {
 		tx.Rollback()
 		return errors.ErrUpdateComputer
 	}
@@ -157,7 +157,7 @@ func (r *PostgresSessionRepo) GetActiveSessions(ctx context.Context) []*models2.
 	}
 
 	// Если в кеше нет, загружаем из БД
-	r.db.Where("end_time IS NULL").Find(&sessions)
+	r.db.WithContext(ctx).Where("end_time IS NULL").Find(&sessions)
 
 	// Кешируем результат
 	for _, session := range sessions {

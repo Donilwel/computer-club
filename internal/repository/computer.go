@@ -21,17 +21,17 @@ func NewComputerRepository(db *gorm.DB) ComputerRepository {
 
 func (r *PostgresComputerRepo) UpdateStatus(ctx context.Context, number int, free models.ComputerStatus) error {
 	var computer models.Computer
-	if err := r.db.First(&computer, "id = ?", number).Error; err != nil {
+	if err := r.db.WithContext(ctx).First(&computer, "id = ?", number).Error; err != nil {
 		return errors.ErrFindComputer
 	}
-	if err := r.db.Model(&computer).Update("status", free).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&computer).Update("status", free).Error; err != nil {
 		return errors.ErrUpdateComputer
 	}
 	return nil
 }
 func (r *PostgresComputerRepo) GetComputers(ctx context.Context) ([]models.Computer, error) {
 	var computers []models.Computer
-	if err := r.db.Find(&computers).Error; err != nil {
+	if err := r.db.WithContext(ctx).Find(&computers).Error; err != nil {
 		return nil, errors.ErrFindComputer
 	}
 	return computers, nil

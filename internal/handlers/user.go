@@ -17,12 +17,13 @@ type UserHandler interface {
 }
 
 type userHandler struct {
-	userService usecase.UserService
-	log         *logrus.Logger
+	userService   usecase.UserService
+	walletService usecase.WalletService
+	log           *logrus.Logger
 }
 
-func NewUserHandler(userService usecase.UserService, log *logrus.Logger) UserHandler {
-	return &userHandler{userService: userService, log: log}
+func NewUserHandler(userService usecase.UserService, walletService usecase.WalletService, log *logrus.Logger) UserHandler {
+	return &userHandler{userService: userService, walletService: walletService, log: log}
 }
 
 func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
@@ -42,10 +43,34 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//тут нужно в будущем минуты потраченные количество сессий и просто баланс
+	// Получение баланса кошелька
+	balance, err := h.walletService.GetBalance(ctx, userID)
+	if err != nil {
+		h.log.Error("Ошибка получения баланса кошелька")
+		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	transactions, err := h.walletService.GetTransactions(ctx, userID)
+	if err != nil {
+		h.log.Error("Ошибка получения списка транзакций")
+		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := struct {
+		User         *models.User         `json:"user"`
+		Balance      float64              `json:"balance"`
+		Transactions []models.Transaction `json:"transactions"`
+	}{
+		User:         user,
+		Balance:      balance,
+		Transactions: transactions,
+	}
+
 	h.log.Info(w, http.StatusOK, "Получена информация о пользователе")
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h userHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {

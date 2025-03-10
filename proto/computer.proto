@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package proto;
+
+service ComputerService {
+  rpc GetComputersStatus(ComputerStatusRequest) returns (ComputerStatusResponse);
+}
+
+message ComputerStatusRequest {
+
+}
+
+message ComputerStatusResponse {
+
+}

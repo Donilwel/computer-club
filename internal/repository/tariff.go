@@ -22,7 +22,7 @@ func NewTariffRepositoryPostgres(db *gorm.DB) TariffRepository {
 
 func (r *TariffRepositoryPostgres) GetTariff(ctx context.Context) ([]models.Tariff, error) {
 	var tariffs []models.Tariff
-	err := r.db.Find(&tariffs).Error
+	err := r.db.WithContext(ctx).Find(&tariffs).Error
 	if err != nil {
 		return nil, errors.ErrFindTariffs
 	}
@@ -31,7 +31,7 @@ func (r *TariffRepositoryPostgres) GetTariff(ctx context.Context) ([]models.Tari
 
 func (r *TariffRepositoryPostgres) GetTariffByID(ctx context.Context, id int64) (*models.Tariff, error) {
 	var tariff models.Tariff
-	err := r.db.First(&tariff, id).Error
+	err := r.db.WithContext(ctx).First(&tariff, id).Error
 	if err != nil {
 		return nil, errors.ErrFindTariffByID
 	}

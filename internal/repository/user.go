@@ -23,7 +23,7 @@ func NewPostgresUserRepo(db *gorm.DB) UserRepository {
 }
 
 func (r *PostgresUserRepo) CreateUser(ctx context.Context, user *models.User) error {
-	if err := r.db.Create(user).Error; err != nil {
+	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
 		return errors.ErrCreatedUser
 	}
 
@@ -32,7 +32,7 @@ func (r *PostgresUserRepo) CreateUser(ctx context.Context, user *models.User) er
 
 func (r *PostgresUserRepo) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
 	var user models.User
-	result := r.db.First(&user, id)
+	result := r.db.WithContext(ctx).First(&user, id)
 	if result.Error != nil {
 		return nil, errors.ErrFindUser
 	}
@@ -41,7 +41,7 @@ func (r *PostgresUserRepo) GetUserByID(ctx context.Context, id int64) (*models.U
 
 func (r *PostgresUserRepo) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	err := r.db.Where("email = ?", email).First(&user).Error
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
 		return nil, errors.ErrFindUser
 	}
@@ -50,7 +50,7 @@ func (r *PostgresUserRepo) GetUserByEmail(ctx context.Context, email string) (*m
 
 func (r *PostgresUserRepo) GetUserByName(ctx context.Context, name string) (*models.User, error) {
 	var user models.User
-	err := r.db.Where("name = ?", name).First(&user).Error
+	err := r.db.WithContext(ctx).Where("name = ?", name).First(&user).Error
 	if err != nil {
 		return nil, errors.ErrFindUser
 	}

@@ -33,14 +33,14 @@ func (r *PostgresWalletRepo) CreateTransaction(ctx context.Context, userID int64
 	}
 
 	transaction := models2.Transaction{UserID: userID, Amount: amount, Type: models2.TransactionType(typ), TariffID: tariffID}
-	if err := r.db.Create(&transaction).Error; err != nil {
+	if err := r.db.WithContext(ctx).Create(&transaction).Error; err != nil {
 		return nil, errors.ErrCreateTransaction
 	}
 	return &transaction, nil
 }
 
 func (r *PostgresWalletRepo) Deposit(ctx context.Context, userID int64, amount float64) error {
-	err := r.db.Model(&models2.Wallet{}).Where("user_id = ?", userID).
+	err := r.db.WithContext(ctx).Model(&models2.Wallet{}).Where("user_id = ?", userID).
 		Update("balance", gorm.Expr("balance + ?", amount)).Error
 	if err != nil {
 		return errors.ErrToDeposit
@@ -49,7 +49,7 @@ func (r *PostgresWalletRepo) Deposit(ctx context.Context, userID int64, amount f
 }
 
 func (r *PostgresWalletRepo) Withdraw(ctx context.Context, userID int64, amount float64) error {
-	err := r.db.Model(&models2.Wallet{}).Where("user_id = ? AND balance >= ?", userID, amount).
+	err := r.db.WithContext(ctx).Model(&models2.Wallet{}).Where("user_id = ? AND balance >= ?", userID, amount).
 		Update("balance", gorm.Expr("balance - ?", amount)).Error
 	if err != nil {
 		return errors.ErrWithdraw
@@ -59,7 +59,7 @@ func (r *PostgresWalletRepo) Withdraw(ctx context.Context, userID int64, amount 
 
 func (r *PostgresWalletRepo) GetBalance(ctx context.Context, userID int64) (float64, error) {
 	var wallet models2.Wallet
-	if err := r.db.Where("user_id = ?", userID).First(&wallet).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&wallet).Error; err != nil {
 		return 0, errors.ErrCheckBalance
 	}
 	return wallet.Balance, nil
@@ -67,7 +67,7 @@ func (r *PostgresWalletRepo) GetBalance(ctx context.Context, userID int64) (floa
 
 func (r *PostgresWalletRepo) GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error) {
 	var transactions []models2.Transaction
-	err := r.db.Where("user_id = ?", userID).Find(&transactions).Error
+	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&transactions).Error
 	if err != nil {
 		return nil, errors.ErrCheckTransaction
 	}
@@ -75,7 +75,7 @@ func (r *PostgresWalletRepo) GetTransactions(ctx context.Context, userID int64) 
 }
 
 func (r *PostgresWalletRepo) CreateWallet(ctx context.Context, wallet *models2.Wallet) error {
-	if err := r.db.Create(wallet).Error; err != nil {
+	if err := r.db.WithContext(ctx).Create(wallet).Error; err != nil {
 		return errors.ErrCreateWallet
 	}
 	return nil

@@ -63,7 +63,7 @@ func NewContainer() *Container {
 	computerUsecase := usecase.NewComputerUsecase(computerRepo)
 
 	// Инициализация хендлеров
-	userHandler := handlers.NewUserHandler(userUsecase, log) // Добавили log
+	userHandler := handlers.NewUserHandler(userUsecase, walletUsecase, log) // Добавили log
 	sessionHandler := handlers.NewSessionHandler(sessionUsecase, log)
 	tariffHandler := handlers.NewTariffHandler(tariffUsecase, log)
 	walletHandler := handlers.NewWalletHandler(walletUsecase, log)
