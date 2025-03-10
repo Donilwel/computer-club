@@ -67,7 +67,11 @@ func (r *PostgresWalletRepo) GetBalance(ctx context.Context, userID int64) (floa
 
 func (r *PostgresWalletRepo) GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error) {
 	var transactions []models2.Transaction
-	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&transactions).Error
+	err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("created_at DESC").
+		Limit(100).
+		Find(&transactions).Error
 	if err != nil {
 		return nil, errors.ErrCheckTransaction
 	}
