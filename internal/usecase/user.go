@@ -75,7 +75,10 @@ func (u *UserUsecase) RegisterUser(ctx context.Context,
 		Role:     string(role),
 	}
 
-	if err := u.userRepo.CreateUser(ctx, user); err != nil {
+	tx := u.userRepo.BeginTransaction(ctx)
+	defer tx.Rollback()
+
+	if err := u.userRepo.CreateUser(ctx, tx, user); err != nil {
 		return nil, err
 	}
 
@@ -84,10 +87,16 @@ func (u *UserUsecase) RegisterUser(ctx context.Context,
 		Balance: 0.0,
 	}
 
-	if err := u.walletRepo.CreateWallet(ctx, wallet); err != nil {
+	if err := u.walletRepo.CreateWallet(ctx, tx, wallet); err != nil {
 		return nil, err
 	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	return user, nil
+
 }
 
 func (u *UserUsecase) LoginUser(ctx context.Context, email string, password string) (string, error) {

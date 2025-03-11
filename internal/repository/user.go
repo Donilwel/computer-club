@@ -8,10 +8,11 @@ import (
 )
 
 type UserRepository interface {
-	CreateUser(ctx context.Context, user *models.User) error
+	CreateUser(ctx context.Context, tx Transaction, user *models.User) error
 	GetUserByID(ctx context.Context, id int64) (*models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByName(ctx context.Context, name string) (*models.User, error)
+	BeginTransaction(ctx context.Context) Transaction
 }
 
 type PostgresUserRepo struct {
@@ -22,8 +23,16 @@ func NewPostgresUserRepo(db *gorm.DB) UserRepository {
 	return &PostgresUserRepo{db: db}
 }
 
-func (r *PostgresUserRepo) CreateUser(ctx context.Context, user *models.User) error {
-	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
+func (r *PostgresUserRepo) BeginTransaction(ctx context.Context) Transaction {
+	return &GormTransaction{tx: r.db.WithContext(ctx).Begin()}
+}
+
+func (r *PostgresUserRepo) CreateUser(ctx context.Context, tx Transaction, user *models.User) error {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
+	if err := db.WithContext(ctx).Create(user).Error; err != nil {
 		return errors.ErrCreatedUser
 	}
 
