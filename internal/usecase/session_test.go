@@ -325,3 +325,159 @@ func TestStartSession(t *testing.T) {
 		})
 	}
 }
+
+func TestEndSession(t *testing.T) {
+	tests := []struct {
+		name          string
+		mockSetup     func(*mocks.SessionRepository, *mocks.ComputerRepository, *mocks.Transaction)
+		expectedError error
+	}{
+		{
+			name: "Success",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
+
+				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
+
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
+				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
+				computerRepo.On("MarkComputerFree", mock.Anything, tx, session.PCNumber).Return(nil)
+				sessionRepo.On("DeleteSessionCache", mock.Anything, sessionID).Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Session Not Found",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+
+				tx.On("Rollback").Return(nil)
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return((*models.Session)(nil), errors.ErrSessionNotFound)
+			},
+			expectedError: errors.ErrSessionNotFound,
+		},
+		{
+			name: "Session Already Finished",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Finished}
+
+				tx.On("Rollback").Return(nil)
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
+			},
+			expectedError: errors.ErrStatusSessionAlreadyFinished,
+		},
+		{
+			name: "Upload Status Session Failed",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
+
+				tx.On("Rollback").Return(nil)
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
+				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(errors.ErrUpdateSession)
+			},
+			expectedError: errors.ErrUpdateSession,
+		},
+		{
+			name: "Upload Status Computer Failed",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
+
+				tx.On("Rollback").Return(nil)
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
+				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
+				computerRepo.On("MarkComputerFree", mock.Anything, tx, session.PCNumber).Return(errors.ErrUpdateComputerStatus)
+			},
+			expectedError: errors.ErrUpdateComputerStatus,
+		},
+		{
+			name: "Transaction Commit Failed",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
+
+				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(errors.ErrCommitData)
+
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
+				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
+				computerRepo.On("MarkComputerFree", mock.Anything, tx, session.PCNumber).Return(nil)
+			},
+			expectedError: errors.ErrCommitData,
+		},
+		{
+			name: "Delete Cashed Data Failed",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
+
+				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
+
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
+				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
+				computerRepo.On("MarkComputerFree", mock.Anything, tx, session.PCNumber).Return(nil)
+				sessionRepo.On("DeleteSessionCache", mock.Anything, sessionID).Return(errors.ErrDeleteRedis)
+			},
+			expectedError: errors.ErrDeleteRedis,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			mockSessionRepo := new(mocks.SessionRepository)
+			mockComputerRepo := new(mocks.ComputerRepository)
+			mockTransaction := new(mocks.Transaction)
+
+			sessionUsecase := usecase.NewSessionUsecase(
+				mockSessionRepo,
+				new(mocks.UserRepository),
+				mockComputerRepo,
+				new(mocks.TariffRepository),
+				new(mocks.WalletRepository),
+			)
+
+			tt.mockSetup(mockSessionRepo, mockComputerRepo, mockTransaction)
+
+			err := sessionUsecase.EndSession(ctx, 1)
+			assert.ErrorIs(t, err, tt.expectedError)
+		})
+	}
+}
+
+func TestGetActiveSessions(t *testing.T) {
+	mockSessionRepo := new(mocks.SessionRepository)
+	sessionUsecase := usecase.NewSessionUsecase(
+		mockSessionRepo,
+		new(mocks.UserRepository),
+		new(mocks.ComputerRepository),
+		new(mocks.TariffRepository),
+		new(mocks.WalletRepository),
+	)
+
+	ctx := context.Background()
+	activeSessions := []*models.Session{
+		{ID: 1, UserID: 101, PCNumber: 5, TariffID: 2},
+		{ID: 2, UserID: 102, PCNumber: 6, TariffID: 3},
+	}
+
+	mockSessionRepo.On("GetActiveSessions", ctx).Return(activeSessions)
+
+	result := sessionUsecase.GetActiveSessions(ctx)
+
+	assert.Equal(t, activeSessions, result)
+
+	mockSessionRepo.AssertExpectations(t)
+}
