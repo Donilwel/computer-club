@@ -3,12 +3,10 @@ package usecase
 import (
 	"computer-club/internal/repository"
 	"computer-club/internal/repository/models"
+	"computer-club/pkg/JWT"
 	"computer-club/pkg/errors"
 	"context"
-	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
-	"os"
-	"time"
 )
 
 type UserService interface {
@@ -29,8 +27,7 @@ func NewUserUsecase(userRepo repository.UserRepository,
 }
 
 func (u *UserUsecase) RegisterUser(ctx context.Context,
-	name, email, password string,
-	role models.UserRole) (*models.User, error) {
+	name, email, password string, role models.UserRole) (*models.User, error) {
 	// Проверки на пустые поля
 	if name == "" {
 		return nil, errors.ErrNameEmpty
@@ -109,25 +106,12 @@ func (u *UserUsecase) LoginUser(ctx context.Context, email string, password stri
 		return "", errors.ErrInvalidCredentials
 	}
 
-	token, err := generateJWT(user)
+	token, err := JWT.GenerateJWT(user)
 	if err != nil {
 		return "", errors.ErrTokenGeneration
 	}
 
 	return token, nil
-}
-
-var jwtKey = []byte(os.Getenv("JWT_SECRET"))
-
-func generateJWT(user *models.User) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id": user.ID,
-		"role":    user.Role,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtKey)
 }
 
 func (u *UserUsecase) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {

@@ -46,17 +46,17 @@ func (_m *WalletRepository) CreateTransaction(ctx context.Context, tx repository
 	return r0, r1
 }
 
-// CreateWallet provides a mock function with given fields: ctx, wallet
-func (_m *WalletRepository) CreateWallet(ctx context.Context, wallet *models.Wallet) error {
-	ret := _m.Called(ctx, wallet)
+// CreateWallet provides a mock function with given fields: ctx, tx, wallet
+func (_m *WalletRepository) CreateWallet(ctx context.Context, tx repository.Transaction, wallet *models.Wallet) error {
+	ret := _m.Called(ctx, tx, wallet)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateWallet")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *models.Wallet) error); ok {
-		r0 = rf(ctx, wallet)
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Transaction, *models.Wallet) error); ok {
+		r0 = rf(ctx, tx, wallet)
 	} else {
 		r0 = ret.Error(0)
 	}

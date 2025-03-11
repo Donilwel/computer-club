@@ -36,10 +36,8 @@ func NewSessionUsecase(sessionRepository repository.SessionRepository,
 		walletRepo:   walletRepo}
 }
 
-func (u *SessionUsecase) StartSession(ctx context.Context,
-	userID int64,
-	pcNumber int,
-	tariffID int64) (*models.Session, error) {
+func (u *SessionUsecase) StartSession(ctx context.Context, userID int64,
+	pcNumber int, tariffID int64) (*models.Session, error) {
 	_, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return nil, err
