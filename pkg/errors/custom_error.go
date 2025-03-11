@@ -72,4 +72,5 @@ var (
 	// Общие ошибки
 	ErrJSONRequest = errors.New("ошибка JSON запроса")
 	ErrUnexpected  = errors.New("неизвестная ошибка")
+	ErrCodingaData = errors.New("ошибка обработки данных")
 )

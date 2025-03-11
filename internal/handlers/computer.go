@@ -31,7 +31,7 @@ func (h computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Reque
 	ctx := r.Context()
 	h.log.Info("Запрос на получение статуса компьютеров")
 
-	role, ok := r.Context().Value("role").(string)
+	role, ok := ctx.Value("role").(string)
 	if !ok || role != string(models.Admin) {
 		h.log.WithError(errors.ErrForbidden).Error("Ошибка при получении списка компьютеров: недостаточно прав")
 		middleware.WriteError(w, http.StatusForbidden, errors.ErrForbidden.Error())
@@ -47,7 +47,11 @@ func (h computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Reque
 
 	h.log.WithField("count", len(computers)).Info("Статус компьютеров получен")
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(computers)
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(computers); err != nil {
+		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+	}
 }

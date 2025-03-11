@@ -48,7 +48,6 @@ func (h sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	session, err := h.sessionService.StartSession(ctx, userID, req.PCNumber, req.TariffID)
 	if err != nil {
-		// Проверяем тип ошибки
 		switch err {
 		case errors.ErrUserNotFound, errors.ErrComputerNotFound, errors.ErrTariffNotFound:
 			middleware.WriteError(w, http.StatusNotFound, err.Error())
@@ -71,9 +70,13 @@ func (h sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		"status":     session.Status,
 	}).Info("Сессия успешно запущена")
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(session)
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(session); err != nil {
+		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+	}
 }
 
 // EndSession завершает активную сессию
@@ -108,9 +111,13 @@ func (h sessionHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 
 	h.log.WithField("session_id", req.SessionID).Info("Сессия успешно завершена")
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "Session ended successfully"})
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Session ended successfully"}); err != nil {
+		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+	}
 }
 
 // GetActiveSessions выводит список активных сессий
@@ -128,7 +135,11 @@ func (h sessionHandler) GetActiveSessions(w http.ResponseWriter, r *http.Request
 	sessions := h.sessionService.GetActiveSessions(ctx)
 	h.log.WithField("count", len(sessions)).Info("Активные сессии получены")
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sessions)
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(sessions); err != nil {
+		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+	}
 }

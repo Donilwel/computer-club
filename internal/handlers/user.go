@@ -69,9 +69,14 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.log.Info(w, http.StatusOK, "Получена информация о пользователе")
-	w.WriteHeader(http.StatusOK)
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+	}
 }
 
 func (h userHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
@@ -121,7 +126,12 @@ func (h userHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}).Info("Пользователь зарегистрирован")
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+	}
 }
 
 func (h userHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +154,11 @@ func (h userHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Отправляем токен
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(map[string]string{"token": token}); err != nil {
+		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+	}
 }
