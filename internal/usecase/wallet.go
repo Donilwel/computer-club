@@ -63,10 +63,16 @@ func (u *WalletUsecase) Withdraw(ctx context.Context, userID int64, amount float
 }
 
 func (u *WalletUsecase) GetBalance(ctx context.Context, userID int64) (float64, error) {
+	if _, err := u.userRepo.GetUserByID(ctx, userID); err != nil {
+		return 0.0, err
+	}
 	return u.walletRepo.GetBalance(ctx, userID)
 }
 
 func (u *WalletUsecase) GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error) {
+	if _, err := u.userRepo.GetUserByID(ctx, userID); err != nil {
+		return nil, err
+	}
 	return u.walletRepo.GetTransactions(ctx, userID)
 }
 
