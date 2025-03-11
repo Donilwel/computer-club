@@ -10,7 +10,10 @@ import (
 )
 
 type SessionService interface {
-	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
+	StartSession(ctx context.Context,
+		userID int64,
+		pcNumber int,
+		tariffID int64) (*models.Session, error)
 	EndSession(ctx context.Context, sessionID int64) error
 	GetActiveSessions(ctx context.Context) []*models.Session
 	MonitorSessions(ctx context.Context)
@@ -36,10 +39,13 @@ func NewSessionUsecase(sessionRepository repository.SessionRepository,
 		walletRepo:   walletRepo}
 }
 
-func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
+func (u *SessionUsecase) StartSession(ctx context.Context,
+	userID int64,
+	pcNumber int,
+	tariffID int64) (*models.Session, error) {
 	_, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, errors.ErrUserNotFound
+		return nil, err
 	}
 
 	tx := u.sessionRepository.BeginTransaction(ctx)
@@ -64,7 +70,7 @@ func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumbe
 
 	tariff, err := u.tariffRepo.GetTariffByID(ctx, tariffID)
 	if err != nil {
-		return nil, errors.ErrTariffNotFound
+		return nil, err
 	}
 
 	balance, err := u.walletRepo.GetBalance(ctx, userID)
@@ -92,12 +98,12 @@ func (u *SessionUsecase) StartSession(ctx context.Context, userID int64, pcNumbe
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, errors.ErrCommitData
+		return nil, err
 	}
 
 	err = u.sessionRepository.CacheSession(ctx, session)
 	if err != nil {
-		return nil, errors.ErrCacheSession
+		return nil, err
 	}
 
 	return session, nil
@@ -109,7 +115,7 @@ func (u *SessionUsecase) EndSession(ctx context.Context, sessionID int64) error 
 
 	session, err := u.sessionRepository.GetSessionByID(ctx, tx, sessionID)
 	if err != nil {
-		return errors.ErrSessionNotFound
+		return err
 	}
 
 	if session.Status == models.Finished {
@@ -118,22 +124,22 @@ func (u *SessionUsecase) EndSession(ctx context.Context, sessionID int64) error 
 
 	err = u.sessionRepository.MarkSessionFinished(ctx, tx, sessionID)
 	if err != nil {
-		return errors.ErrUpdateSession
+		return err
 	}
 
 	err = u.computerRepo.MarkComputerFree(ctx, tx, session.PCNumber)
 	if err != nil {
-		return errors.ErrUpdateComputer
+		return err
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return errors.ErrCommitData
+		return err
 	}
 
 	err = u.sessionRepository.DeleteSessionCache(ctx, sessionID)
 	if err != nil {
-		return errors.ErrDeleteRedis
+		return err
 	}
 
 	return nil

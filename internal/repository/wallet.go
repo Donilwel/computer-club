@@ -13,7 +13,12 @@ type WalletRepository interface {
 	CreateWallet(ctx context.Context, wallet *models2.Wallet) error
 	Deposit(ctx context.Context, userID int64, amount float64) error
 	Withdraw(ctx context.Context, tx Transaction, userID int64, amount float64) error
-	CreateTransaction(ctx context.Context, tx Transaction, userID int64, amount float64, typ string, tariff *models2.Tariff) (*models2.Transaction, error)
+	CreateTransaction(ctx context.Context,
+		tx Transaction,
+		userID int64,
+		amount float64,
+		typ string,
+		tariff *models2.Tariff) (*models2.Transaction, error)
 }
 
 type PostgresWalletRepo struct {
@@ -24,7 +29,12 @@ func NewPostgresWalletRepo(db *gorm.DB) WalletRepository {
 	return &PostgresWalletRepo{db: db}
 }
 
-func (r *PostgresWalletRepo) CreateTransaction(ctx context.Context, tx Transaction, userID int64, amount float64, typ string, tariff *models2.Tariff) (*models2.Transaction, error) {
+func (r *PostgresWalletRepo) CreateTransaction(ctx context.Context,
+	tx Transaction,
+	userID int64,
+	amount float64,
+	typ string,
+	tariff *models2.Tariff) (*models2.Transaction, error) {
 	db := r.db
 	if tx != nil {
 		db = tx.DB()

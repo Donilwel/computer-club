@@ -69,6 +69,7 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.log.Info(w, http.StatusOK, "Получена информация о пользователе")
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -143,6 +144,7 @@ func (h userHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Отправляем токен
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }

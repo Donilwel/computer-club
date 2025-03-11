@@ -19,16 +19,18 @@ type UserService interface {
 }
 
 type UserUsecase struct {
-	userRepo      repository.UserRepository
-	walletService WalletService
+	userRepo   repository.UserRepository
+	walletRepo repository.WalletRepository
 }
 
 func NewUserUsecase(userRepo repository.UserRepository,
-	walletService WalletService) UserService {
-	return &UserUsecase{userRepo: userRepo, walletService: walletService}
+	walletRepo repository.WalletRepository) UserService {
+	return &UserUsecase{userRepo: userRepo, walletRepo: walletRepo}
 }
 
-func (u *UserUsecase) RegisterUser(ctx context.Context, name, email, password string, role models.UserRole) (*models.User, error) {
+func (u *UserUsecase) RegisterUser(ctx context.Context,
+	name, email, password string,
+	role models.UserRole) (*models.User, error) {
 	// Проверки на пустые поля
 	if name == "" {
 		return nil, errors.ErrNameEmpty
@@ -73,11 +75,16 @@ func (u *UserUsecase) RegisterUser(ctx context.Context, name, email, password st
 		Role:     string(role),
 	}
 
-	// Сохраняем пользователя в БД
 	if err := u.userRepo.CreateUser(ctx, user); err != nil {
 		return nil, err
 	}
-	if err := u.walletService.CreateWallet(ctx, user.ID); err != nil {
+
+	wallet := &models.Wallet{
+		UserID:  user.ID,
+		Balance: 0.0,
+	}
+
+	if err := u.walletRepo.CreateWallet(ctx, wallet); err != nil {
 		return nil, err
 	}
 	return user, nil
@@ -86,7 +93,7 @@ func (u *UserUsecase) RegisterUser(ctx context.Context, name, email, password st
 func (u *UserUsecase) LoginUser(ctx context.Context, email string, password string) (string, error) {
 	user, err := u.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return "", errors.ErrInvalidCredentials
+		return "", err
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
@@ -107,7 +114,7 @@ func generateJWT(user *models.User) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": user.ID,
 		"role":    user.Role,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(), // Токен живёт 24 часа
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

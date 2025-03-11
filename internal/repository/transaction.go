@@ -1,6 +1,9 @@
 package repository
 
-import "gorm.io/gorm"
+import (
+	"computer-club/pkg/errors"
+	"gorm.io/gorm"
+)
 
 type Transaction interface {
 	Commit() error
@@ -13,7 +16,10 @@ type GormTransaction struct {
 }
 
 func (t *GormTransaction) Commit() error {
-	return t.tx.Commit().Error
+	if err := t.tx.Commit().Error; err != nil {
+		return errors.ErrCommitData
+	}
+	return nil
 }
 
 func (t *GormTransaction) Rollback() error {

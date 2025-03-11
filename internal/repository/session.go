@@ -117,7 +117,6 @@ func (r *PostgresSessionRepo) CreateSession(ctx context.Context, tx Transaction,
 		return nil, errors.ErrCreatedSession
 	}
 
-	// Обновляем статус ПК
 	if err := db.WithContext(ctx).Model(&models.Computer{}).
 		Where("pc_number = ?", pcNumber).
 		Update("status", models.Busy).Error; err != nil {
@@ -144,19 +143,22 @@ func (r *PostgresSessionRepo) MarkSessionFinished(ctx context.Context, tx Transa
 func (r *PostgresSessionRepo) CacheSession(ctx context.Context, session *models.Session) error {
 	sessionJSON, err := json.Marshal(session)
 	if err != nil {
-		return err
+		return errors.ErrJSONRequest
 	}
 	cacheKey := getSessionKey(session.ID)
 
 	err = r.redis.Set(ctx, cacheKey, sessionJSON, 24*time.Hour).Err()
 	if err != nil {
-		return err
+		return errors.ErrCacheSession
 	}
 	return nil
 }
 
 func (r *PostgresSessionRepo) DeleteSessionCache(ctx context.Context, sessionID int64) error {
-	return r.redis.Del(ctx, getSessionKey(sessionID)).Err()
+	if err := r.redis.Del(ctx, getSessionKey(sessionID)).Err(); err != nil {
+		return errors.ErrDeleteRedis
+	}
+	return nil
 }
 
 func getSessionKey(sessionID int64) string {

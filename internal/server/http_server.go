@@ -2,8 +2,6 @@ package server
 
 import (
 	"computer-club/internal/di"
-	"context"
-	"fmt"
 	"net/http"
 )
 
@@ -24,18 +22,4 @@ func NewHttpServer(container *di.Container) *HttpServer {
 		container: container,
 		server:    httpSrv,
 	}
-}
-
-// Run запускает HTTP-сервер
-func (s *HttpServer) Run() {
-	fmt.Println("HTTP сервер запущен на порту:", s.container.Cfg.Server.HTTPPort)
-	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		s.container.Log.Fatal("Ошибка HTTP сервера:", err)
-	}
-}
-
-// Shutdown корректно завершает работу HTTP-сервера
-func (s *HttpServer) Shutdown(ctx context.Context) {
-	s.server.Shutdown(ctx)
-	s.container.Log.Info("HTTP сервер успешно остановлен")
 }

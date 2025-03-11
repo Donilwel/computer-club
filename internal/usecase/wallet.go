@@ -12,8 +12,11 @@ type WalletService interface {
 	Withdraw(ctx context.Context, userID int64, amount float64) error
 	GetBalance(ctx context.Context, userID int64) (float64, error)
 	GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error)
-	CreateTransaction(ctx context.Context, userID int64, amount float64, typ string, tariffID int64) (*models2.Transaction, error)
-	CreateWallet(ctx context.Context, userID int64) error
+	CreateTransaction(ctx context.Context,
+		userID int64,
+		amount float64,
+		typ string,
+		tariffID int64) (*models2.Transaction, error)
 }
 
 type WalletUsecase struct {
@@ -30,30 +33,16 @@ func NewWalletUsecase(walletRepo repository.WalletRepository,
 		userRepo:   userRepo}
 }
 
-func (u *WalletUsecase) CreateWallet(ctx context.Context, userID int64) error {
-	_, err := u.walletRepo.GetBalance(ctx, userID)
-	if err == nil {
-		return errors.ErrWalletAlreadyExists
-	}
-
-	wallet := &models2.Wallet{
-		UserID:  userID,
-		Balance: 0.0,
-	}
-
-	return u.walletRepo.CreateWallet(ctx, wallet)
-}
-
 func (u *WalletUsecase) Deposit(ctx context.Context, userID int64, amount float64) error {
 	if amount <= 0 {
 		return errors.ErrInvalidAmount
 	}
 
 	if _, err := u.userRepo.GetUserByID(ctx, userID); err != nil {
-		return errors.ErrUserNotFound
+		return err
 	}
 	if _, err := u.walletRepo.GetBalance(ctx, userID); err != nil {
-		return errors.ErrCheckBalance
+		return err
 	}
 
 	return u.walletRepo.Deposit(ctx, userID, amount)
@@ -81,7 +70,11 @@ func (u *WalletUsecase) GetTransactions(ctx context.Context, userID int64) ([]mo
 	return u.walletRepo.GetTransactions(ctx, userID)
 }
 
-func (u *WalletUsecase) CreateTransaction(ctx context.Context, userID int64, amount float64, typ string, tariffID int64) (*models2.Transaction, error) {
+func (u *WalletUsecase) CreateTransaction(ctx context.Context,
+	userID int64,
+	amount float64,
+	typ string,
+	tariffID int64) (*models2.Transaction, error) {
 	if tariffID != -1 {
 		tariff, err := u.tariffRepo.GetTariffByID(ctx, tariffID)
 		if err != nil {

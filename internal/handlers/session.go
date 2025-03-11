@@ -45,6 +45,7 @@ func (h sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
 		return
 	}
+	defer r.Body.Close()
 	session, err := h.sessionService.StartSession(ctx, userID, req.PCNumber, req.TariffID)
 	if err != nil {
 		// Проверяем тип ошибки
@@ -70,6 +71,7 @@ func (h sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		"status":     session.Status,
 	}).Info("Сессия успешно запущена")
 
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(session)
 }
@@ -87,6 +89,7 @@ func (h sessionHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
 		return
 	}
+	defer r.Body.Close()
 
 	h.log.WithField("session_id", req.SessionID).Info("Попытка завершить сессию")
 
@@ -106,6 +109,7 @@ func (h sessionHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 	h.log.WithField("session_id", req.SessionID).Info("Сессия успешно завершена")
 
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Session ended successfully"})
 }
 
@@ -124,6 +128,7 @@ func (h sessionHandler) GetActiveSessions(w http.ResponseWriter, r *http.Request
 	sessions := h.sessionService.GetActiveSessions(ctx)
 	h.log.WithField("count", len(sessions)).Info("Активные сессии получены")
 
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(sessions)
 }

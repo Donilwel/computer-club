@@ -58,7 +58,7 @@ func NewContainer() *Container {
 	// Инициализация usecase'ов
 	tariffUsecase := usecase.NewTariffUsecase(tariffRepo)
 	walletUsecase := usecase.NewWalletUsecase(walletRepo, tariffUsecase, userRepo)
-	userUsecase := usecase.NewUserUsecase(userRepo, walletUsecase)
+	userUsecase := usecase.NewUserUsecase(userRepo, walletRepo)
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo, computerRepo, tariffRepo, walletRepo)
 	computerUsecase := usecase.NewComputerUsecase(computerRepo)
 

@@ -36,6 +36,7 @@ func (h tariffHandler) GetTariff(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.log.Info(w, http.StatusOK, "Получен список тарифов")
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tariffs)
 }
@@ -60,6 +61,7 @@ func (h tariffHandler) GetTariffByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.log.Info(w, http.StatusOK, "Получен тариф по id")
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tariff)
 }

@@ -47,6 +47,7 @@ func (h computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Reque
 
 	h.log.WithField("count", len(computers)).Info("Статус компьютеров получен")
 
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(computers)
 }
