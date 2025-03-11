@@ -49,6 +49,7 @@ var (
 	ErrInvalidTariffID = errors.New("ошибка чтения тариф id")
 	ErrTariffNotFound  = errors.New("тариф не найден")
 	ErrFindTariffs     = errors.New("ошибка при поиске тарифов в базе данных")
+	ErrTariffsNotFound = errors.New("тарифы не найден")
 
 	// Ошибки транзакций и кошелька
 	ErrInvalidAmount       = errors.New("количество денег должно быть больше нуля")
