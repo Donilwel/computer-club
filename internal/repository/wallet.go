@@ -86,7 +86,7 @@ func (r *PostgresWalletRepo) Withdraw(ctx context.Context, tx Transaction, userI
 func (r *PostgresWalletRepo) GetBalance(ctx context.Context, userID int64) (float64, error) {
 	var wallet models2.Wallet
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&wallet).Error; err != nil {
-		return 0, errors.ErrCheckBalance
+		return 0.0, errors.ErrCheckBalance
 	}
 	return wallet.Balance, nil
 }
