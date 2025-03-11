@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"computer-club/internal/repository/models"
+	"computer-club/internal/usecase"
 	"computer-club/mocks"
 	"computer-club/pkg/errors"
 	"context"
@@ -71,7 +72,7 @@ func TestDeposit(t *testing.T) {
 			mockWalletRepo := new(mocks.WalletRepository)
 			mockTariffRepo := new(mocks.TariffRepository)
 
-			walletUsecase := NewWalletUsecase(
+			walletUsecase := usecase.NewWalletUsecase(
 				mockWalletRepo,
 				mockTariffRepo,
 				mockUserRepo,
@@ -148,7 +149,7 @@ func TestWithdraw(t *testing.T) {
 			mockWalletRepo := new(mocks.WalletRepository)
 			mockTariffRepo := new(mocks.TariffRepository)
 
-			walletUsecase := NewWalletUsecase(
+			walletUsecase := usecase.NewWalletUsecase(
 				mockWalletRepo,
 				mockTariffRepo,
 				mockUserRepo,
@@ -263,7 +264,7 @@ func TestCreateTransaction(t *testing.T) {
 			mockWalletRepo := new(mocks.WalletRepository)
 			mockTariffRepo := new(mocks.TariffRepository)
 
-			walletUsecase := NewWalletUsecase(
+			walletUsecase := usecase.NewWalletUsecase(
 				mockWalletRepo,
 				mockTariffRepo,
 				mockUserRepo,
@@ -339,7 +340,7 @@ func TestGetTransactions(t *testing.T) {
 			mockUserRepo := new(mocks.UserRepository)
 			mockWalletRepo := new(mocks.WalletRepository)
 
-			walletUsecase := NewWalletUsecase(
+			walletUsecase := usecase.NewWalletUsecase(
 				mockWalletRepo,
 				nil,
 				mockUserRepo,
@@ -400,7 +401,7 @@ func TestGetBalance(t *testing.T) {
 			mockUserRepo := new(mocks.UserRepository)
 			mockWalletRepo := new(mocks.WalletRepository)
 
-			walletUsecase := NewWalletUsecase(
+			walletUsecase := usecase.NewWalletUsecase(
 				mockWalletRepo,
 				nil,
 				mockUserRepo,
