@@ -75,6 +75,15 @@ func (u *WalletUsecase) CreateTransaction(ctx context.Context,
 	amount float64,
 	typ string,
 	tariffID int64) (*models2.Transaction, error) {
+	if _, err := u.userRepo.GetUserByID(ctx, userID); err != nil {
+		return nil, err
+	}
+	if amount <= 0 {
+		return nil, errors.ErrInvalidAmount
+	}
+	if typ != string(models2.Buy) && typ != string(models2.Add) {
+		return nil, errors.ErrorTypeTransaction
+	}
 	if tariffID != -1 {
 		tariff, err := u.tariffRepo.GetTariffByID(ctx, tariffID)
 		if err != nil {

@@ -61,6 +61,7 @@ var (
 	ErrCreateWallet        = errors.New("ошибка при создании кошелька в базу данных")
 	ErrInvalidUserID       = errors.New("ошибка чтения id пользователя")
 	ErrCreateTransaction   = errors.New("ошибка создания модели транзакции")
+	ErrorTypeTransaction   = errors.New("ошибка типа транзакции")
 
 	// Ошибки базы данных
 	ErrCommitData       = errors.New("ошибка при сохранении изменений в базе данных")
