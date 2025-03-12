@@ -45,15 +45,9 @@ func (h walletHandler) PutMoneyOnWallet(w http.ResponseWriter, r *http.Request) 
 	}
 	defer r.Body.Close()
 
-	if err := h.walletService.Deposit(ctx, req.UserID, req.Amount); err != nil {
-		h.log.WithError(err).Error("Ошибка при передаче денег")
-		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	transaction, err := h.walletService.CreateTransaction(ctx, req.UserID, req.Amount, string(models2.Add), -1)
+	transaction, err := h.walletService.PutMoneyOnWallet(ctx, req.UserID, req.Amount)
 	if err != nil {
-		h.log.WithError(err).Error("Ошибка при создании модели транзакции")
+		h.log.WithError(err).Error("Ошибка при переводе денег или создании модели транзакции")
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

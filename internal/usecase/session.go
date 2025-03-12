@@ -8,10 +8,7 @@ import (
 )
 
 type SessionService interface {
-	StartSession(ctx context.Context,
-		userID int64,
-		pcNumber int,
-		tariffID int64) (*models.Session, error)
+	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
 	EndSession(ctx context.Context, sessionID int64) error
 	GetActiveSessions(ctx context.Context) []*models.Session
 }

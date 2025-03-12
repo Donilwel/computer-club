@@ -19,7 +19,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Убираем "Bearer " из токена
 		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
 		claims := jwt.MapClaims{}

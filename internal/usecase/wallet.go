@@ -8,15 +8,10 @@ import (
 )
 
 type WalletService interface {
-	Deposit(ctx context.Context, userID int64, amount float64) error
+	PutMoneyOnWallet(ctx context.Context, userID int64, amount float64) (*models2.Transaction, error)
 	Withdraw(ctx context.Context, userID int64, amount float64) error
 	GetBalance(ctx context.Context, userID int64) (float64, error)
 	GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error)
-	CreateTransaction(ctx context.Context,
-		userID int64,
-		amount float64,
-		typ string,
-		tariffID int64) (*models2.Transaction, error)
 }
 
 type WalletUsecase struct {
@@ -33,19 +28,35 @@ func NewWalletUsecase(walletRepo repository.WalletRepository,
 		userRepo:   userRepo}
 }
 
-func (u *WalletUsecase) Deposit(ctx context.Context, userID int64, amount float64) error {
+func (u *WalletUsecase) PutMoneyOnWallet(ctx context.Context, userID int64, amount float64) (*models2.Transaction, error) {
 	if amount <= 0 {
-		return errors.ErrInvalidAmount
+		return nil, errors.ErrInvalidAmount
 	}
 
 	if _, err := u.userRepo.GetUserByID(ctx, userID); err != nil {
-		return err
+		return nil, err
 	}
 	if _, err := u.walletRepo.GetBalance(ctx, userID); err != nil {
-		return err
+		return nil, err
 	}
 
-	return u.walletRepo.Deposit(ctx, userID, amount)
+	tx := u.walletRepo.BeginTransaction(ctx)
+	defer tx.Rollback()
+
+	if err := u.walletRepo.Deposit(ctx, tx, userID, amount); err != nil {
+		return nil, err
+	}
+
+	transaction, err := u.walletRepo.CreateTransaction(ctx, tx, userID, amount, string(models2.Add), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return transaction, nil
 }
 
 func (u *WalletUsecase) Withdraw(ctx context.Context, userID int64, amount float64) error {
@@ -74,28 +85,4 @@ func (u *WalletUsecase) GetTransactions(ctx context.Context, userID int64) ([]mo
 		return nil, err
 	}
 	return u.walletRepo.GetTransactions(ctx, userID)
-}
-
-func (u *WalletUsecase) CreateTransaction(ctx context.Context,
-	userID int64,
-	amount float64,
-	typ string,
-	tariffID int64) (*models2.Transaction, error) {
-	if _, err := u.userRepo.GetUserByID(ctx, userID); err != nil {
-		return nil, err
-	}
-	if amount <= 0 {
-		return nil, errors.ErrInvalidAmount
-	}
-	if typ != string(models2.Buy) && typ != string(models2.Add) {
-		return nil, errors.ErrorTypeTransaction
-	}
-	if tariffID != -1 {
-		tariff, err := u.tariffRepo.GetTariffByID(ctx, tariffID)
-		if err != nil {
-			return nil, err
-		}
-		return u.walletRepo.CreateTransaction(ctx, nil, userID, amount, typ, tariff)
-	}
-	return u.walletRepo.CreateTransaction(ctx, nil, userID, amount, typ, nil)
 }

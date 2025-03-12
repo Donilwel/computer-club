@@ -36,25 +36,19 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteError(w, http.StatusUnauthorized, errors.ErrWrongIDFromJWT.Error())
 		return
 	}
-	user, err := h.userService.GetUserByID(ctx, userID)
+	user, balance, transactions, err := h.userService.GetInfoUser(ctx, userID)
 	if err != nil {
-		h.log.Error("Ошибка в поиске пользователя в базе данных")
-		middleware.WriteError(w, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	// Получение баланса кошелька
-	balance, err := h.walletService.GetBalance(ctx, userID)
-	if err != nil {
-		h.log.Error("Ошибка получения баланса кошелька")
-		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	transactions, err := h.walletService.GetTransactions(ctx, userID)
-	if err != nil {
-		h.log.Error("Ошибка получения списка транзакций")
-		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
+		switch err {
+		case errors.ErrFindUser:
+			middleware.WriteError(w, http.StatusBadRequest, errors.ErrWrongIDFromJWT.Error())
+		case errors.ErrCheckBalance:
+			middleware.WriteError(w, http.StatusInternalServerError, errors.ErrWrongIDFromJWT.Error())
+		case errors.ErrCheckTransaction:
+			middleware.WriteError(w, http.StatusInternalServerError, errors.ErrWrongIDFromJWT.Error())
+		default:
+			middleware.WriteError(w, http.StatusInternalServerError, errors.ErrWrongIDFromJWT.Error())
+		}
+		h.log.Error(err)
 		return
 	}
 
@@ -65,7 +59,7 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	}{
 		User:         user,
 		Balance:      balance,
-		Transactions: transactions,
+		Transactions: *transactions,
 	}
 
 	h.log.Info(w, http.StatusOK, "Получена информация о пользователе")
