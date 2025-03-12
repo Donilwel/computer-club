@@ -1,0 +1,504 @@
+basePath: /
+definitions:
+  handlers.ActiveSessionResponse:
+    properties:
+      pc_number:
+        example: 7
+        type: integer
+      session_id:
+        example: 123
+        type: integer
+      status:
+        example: active
+        type: string
+      tariff_id:
+        example: 3
+        type: integer
+      user_id:
+        example: 456
+        type: integer
+    type: object
+  handlers.EndSessionRequest:
+    properties:
+      session_id:
+        example: 123
+        type: integer
+    type: object
+  handlers.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: secret
+        type: string
+    type: object
+  handlers.LoginResponse:
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  handlers.PutMoneyReq:
+    properties:
+      amount:
+        type: number
+      user_id:
+        type: integer
+    type: object
+  handlers.RegisterUserRequest:
+    properties:
+      email:
+        example: ivan@example.com
+        type: string
+      name:
+        example: Иван Иванов
+        type: string
+      password:
+        example: secret123
+        type: string
+      role:
+        example: customer
+        type: string
+    type: object
+  handlers.StartSessionReq:
+    properties:
+      pc_number:
+        type: integer
+      tariff_id:
+        type: integer
+    type: object
+  handlers.UserInfoResponse:
+    properties:
+      balance:
+        example: 100.5
+        type: number
+      transactions:
+        items:
+          $ref: '#/definitions/models.Transaction'
+        type: array
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  models.Computer:
+    properties:
+      id:
+        type: integer
+      pc_number:
+        type: integer
+      status:
+        $ref: '#/definitions/models.ComputerStatus'
+    type: object
+  models.ComputerStatus:
+    enum:
+    - free
+    - busy
+    type: string
+    x-enum-varnames:
+    - Free
+    - Busy
+  models.Session:
+    properties:
+      end_time:
+        type: string
+      id:
+        type: integer
+      pc_number:
+        type: integer
+      start_time:
+        type: string
+      status:
+        $ref: '#/definitions/models.SessionStatus'
+      tariff_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  models.SessionStatus:
+    enum:
+    - active
+    - finished
+    type: string
+    x-enum-varnames:
+    - Active
+    - Finished
+  models.Tariff:
+    properties:
+      created_at:
+        type: string
+      duration:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+  models.Transaction:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: integer
+      tariff_id:
+        type: integer
+      type:
+        $ref: '#/definitions/models.TransactionType'
+      user_id:
+        type: integer
+    type: object
+  models.TransactionType:
+    enum:
+    - add
+    - buy
+    type: string
+    x-enum-varnames:
+    - Add
+    - Buy
+  models.User:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      role:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a sample API with Swagger
+  title: API Computer-club
+  version: "1.0"
+paths:
+  /computers/status:
+    get:
+      description: Возвращает список всех компьютеров и их статусы (доступно только
+        для администраторов)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            items:
+              $ref: '#/definitions/models.Computer'
+            type: array
+        "403":
+          description: Ошибка доступа - недостаточно прав
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получение статуса компьютеров
+      tags:
+      - computers
+  /info:
+    get:
+      description: Возвращает информацию о пользователе, баланс и транзакции
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.UserInfoResponse'
+        "400":
+          description: Некорректный user_id
+          schema:
+            type: string
+        "401":
+          description: Кошелек не найден или пользователь
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получение информации о пользователе
+      tags:
+      - users
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет email и пароль, возвращает JWT-токен
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный вход
+          schema:
+            $ref: '#/definitions/handlers.LoginResponse'
+        "400":
+          description: Некорректный запрос (невалидный JSON)
+          schema:
+            type: string
+        "401":
+          description: Ошибка авторизации - неверный email или пароль
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Авторизация пользователя
+      tags:
+      - users
+  /pay:
+    put:
+      consumes:
+      - application/json
+      description: Администратор пополняет счет указанного пользователя (admin only)
+      parameters:
+      - description: Данные для пополнения счета
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.PutMoneyReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Счет успешно пополнен
+          schema:
+            $ref: '#/definitions/models.Transaction'
+        "400":
+          description: Некорректный запрос (например, сумма ≤ 0)
+          schema:
+            type: string
+        "403":
+          description: Ошибка доступа - недостаточно прав
+          schema:
+            type: string
+        "404":
+          description: Пользователь не найден
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Пополнение счета игрока
+      tags:
+      - wallet
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Создает нового пользователя с указанными данными
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь успешно зарегистрирован
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Некорректные данные (пустое имя, email, короткий пароль, неверная
+            роль)
+          schema:
+            type: string
+        "409":
+          description: Пользователь уже существует
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Регистрация пользователя
+      tags:
+      - users
+  /session/end:
+    post:
+      consumes:
+      - application/json
+      description: Завершает активную сессию по её идентификатору
+      parameters:
+      - description: Данные для завершения сессии
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.EndSessionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message": "Session ended successfully'
+          schema:
+            type: string
+        "400":
+          description: Некорректный запрос (например, session_id == 0)
+          schema:
+            type: string
+        "404":
+          description: Сессия или компьютер не найдены
+          schema:
+            type: string
+        "409":
+          description: Сессия уже завершена или компьютер уже свободный
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера при закрытии сессии или транзакции
+            базы данных или редис не удалил данные
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Завершение сессии
+      tags:
+      - sessions
+  /session/start:
+    post:
+      consumes:
+      - application/json
+      description: Запускает новую сессию для пользователя на указанном ПК с выбранным
+        тарифом
+      parameters:
+      - description: Данные для старта сессии
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.StartSessionReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Session'
+        "400":
+          description: ошибка JSON запроса
+          schema:
+            type: string
+        "401":
+          description: неправильный user_id в токене
+          schema:
+            type: string
+        "404":
+          description: Не найдено - user, computer или tariff или кошелек
+          schema:
+            type: string
+        "409":
+          description: Сессия уже активная или компьютер занят
+          schema:
+            type: string
+        "500":
+          description: внутренняя проблема поиска в базе данных или ошибка сохранения
+            изменения транзакции базы данных или редис не создал данные
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Начало сессии
+      tags:
+      - sessions
+  /sessions/active:
+    get:
+      description: Возвращает список всех активных сессий (только для администраторов)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.ActiveSessionResponse'
+            type: array
+        "403":
+          description: 'ошибка доступа к текущему запросу. необходима роль пользователя:
+            админ'
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получение активных сессий
+      tags:
+      - sessions
+  /tariff:
+    get:
+      description: Возвращает список всех доступных тарифов
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Tariff'
+            type: array
+        "500":
+          description: ошибка при поиске тарифов в базе данных
+          schema:
+            type: string
+      summary: Получение списка тарифов
+      tags:
+      - tariffs
+  /tariff/{id}:
+    get:
+      description: Возвращает информацию о тарифе по указанному ID
+      parameters:
+      - description: ID тарифа
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Tariff'
+        "400":
+          description: ошибка чтения тариф id
+          schema:
+            type: string
+        "404":
+          description: тариф не найден
+          schema:
+            type: string
+        "500":
+          description: внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Получение тарифа по ID
+      tags:
+      - tariffs
+swagger: "2.0"

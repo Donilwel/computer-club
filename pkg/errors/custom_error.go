@@ -43,6 +43,7 @@ var (
 	ErrComputerNotFound     = errors.New("компьютер не найден")
 	ErrPCBusy               = errors.New("компьютер уже занят")
 	ErrUpdateComputerStatus = errors.New("ошибка при обновлении статуса компьютера")
+	ErrComputerAlreadyFree  = errors.New("статус компьютера уже свободный")
 
 	// Ошибки тарифов
 	ErrFindTariffByID  = errors.New("ошибка при поиске тарифа в базе данных по id")

@@ -50,7 +50,16 @@ func (r *PostgresComputerRepo) MarkComputerFree(ctx context.Context, tx Transact
 	if tx != nil {
 		db = tx.DB()
 	}
-	err := db.WithContext(ctx).Model(&models.Computer{}).
+	var computer models.Computer
+	err := db.WithContext(ctx).First(&computer, "pc_number = ?", pcNumber).Error
+	if err != nil {
+		return errors.ErrComputerNotFound
+	}
+	if string(computer.Status) == string(models.Free) {
+		return errors.ErrComputerAlreadyFree
+	}
+
+	err = db.WithContext(ctx).Model(&models.Computer{}).
 		Where("pc_number = ?", pcNumber).
 		Update("status", models.Free).Error
 	if err != nil {

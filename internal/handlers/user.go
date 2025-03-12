@@ -26,6 +26,24 @@ func NewUserHandler(userService usecase.UserService, walletService usecase.Walle
 	return &userHandler{userService: userService, walletService: walletService, log: log}
 }
 
+type UserInfoResponse struct {
+	User         *models.User         `json:"user"`
+	Balance      float64              `json:"balance" example:"100.50"`
+	Transactions []models.Transaction `json:"transactions"`
+}
+
+// InfoUser godoc
+// @Summary      Получение информации о пользователе
+// @Description  Возвращает информацию о пользователе, баланс и транзакции
+// @Tags         users
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} UserInfoResponse
+// @Failure      401 {object} string "Ошибка авторизации - user_id не найден"
+// @Failure      400 {object} string "Некорректный user_id"
+// @Failure      401 {object} string "Кошелек не найден или пользователь"
+// @Failure      500 {object} string "Внутренняя ошибка сервера"
+// @Router       /info [get]
 func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение информации о пользователе")
@@ -39,24 +57,18 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	user, balance, transactions, err := h.userService.GetInfoUser(ctx, userID)
 	if err != nil {
 		switch err {
-		case errors.ErrFindUser:
-			middleware.WriteError(w, http.StatusBadRequest, errors.ErrWrongIDFromJWT.Error())
-		case errors.ErrCheckBalance:
-			middleware.WriteError(w, http.StatusInternalServerError, errors.ErrWrongIDFromJWT.Error())
+		case errors.ErrFindUser, errors.ErrCheckBalance:
+			middleware.WriteError(w, http.StatusNotFound, err.Error())
 		case errors.ErrCheckTransaction:
-			middleware.WriteError(w, http.StatusInternalServerError, errors.ErrWrongIDFromJWT.Error())
+			middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		default:
-			middleware.WriteError(w, http.StatusInternalServerError, errors.ErrWrongIDFromJWT.Error())
+			middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		}
 		h.log.Error(err)
 		return
 	}
 
-	response := struct {
-		User         *models.User         `json:"user"`
-		Balance      float64              `json:"balance"`
-		Transactions []models.Transaction `json:"transactions"`
-	}{
+	response := UserInfoResponse{
 		User:         user,
 		Balance:      balance,
 		Transactions: *transactions,
@@ -73,16 +85,30 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type RegisterUserRequest struct {
+	Name     string `json:"name" example:"Иван Иванов"`
+	Email    string `json:"email" example:"ivan@example.com"`
+	Password string `json:"password" example:"secret123"`
+	Role     string `json:"role" example:"customer"`
+}
+
+// RegisterUser godoc
+// @Summary      Регистрация пользователя
+// @Description  Создает нового пользователя с указанными данными
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        request body RegisterUserRequest true "Данные для регистрации"
+// @Success      200 {object} models.User "Пользователь успешно зарегистрирован"
+// @Failure      400 {object} string "Некорректные данные (пустое имя, email, короткий пароль, неверная роль)"
+// @Failure      409 {object} string "Пользователь уже существует"
+// @Failure      500 {object} string "Внутренняя ошибка сервера"
+// @Router       /register [post]
 func (h userHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на регистрацию пользователя")
 
-	var req struct {
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Role     string `json:"role"`
-	}
+	var req RegisterUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.WithError(err).Error("Ошибка декодирования JSON")
 		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
@@ -128,26 +154,42 @@ func (h userHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type LoginRequest struct {
+	Email    string `json:"email" example:"user@example.com"`
+	Password string `json:"password" example:"secret"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+}
+
+// LoginUser godoc
+// @Summary      Авторизация пользователя
+// @Description  Проверяет email и пароль, возвращает JWT-токен
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        request body LoginRequest true "Данные для входа"
+// @Success      200 {object} LoginResponse "Успешный вход"
+// @Failure      400 {object} string "Некорректный запрос (невалидный JSON)"
+// @Failure      401 {object} string "Ошибка авторизации - неверный email или пароль"
+// @Failure      500 {object} string "Внутренняя ошибка сервера"
+// @Router       /login [post]
 func (h userHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
 		return
 	}
 	defer r.Body.Close()
 
-	// Вызываем usecase для логина
 	token, err := h.userService.LoginUser(ctx, req.Email, req.Password)
 	if err != nil {
 		middleware.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	// Отправляем токен
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 

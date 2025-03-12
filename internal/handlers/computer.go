@@ -26,7 +26,16 @@ func NewComputerHandler(computerService usecase.ComputerService, log *logrus.Log
 	}
 }
 
-// GetComputersStatus возвращает статус компьютеров
+// GetComputersStatus godoc
+// @Summary      Получение статуса компьютеров
+// @Description  Возвращает список всех компьютеров и их статусы (доступно только для администраторов)
+// @Tags         computers
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {array} models.Computer "Успешный ответ"
+// @Failure      403 {object} string "Ошибка доступа - недостаточно прав"
+// @Failure      500 {object} string "Внутренняя ошибка сервера"
+// @Router       /computers/status [get]
 func (h computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение статуса компьютеров")

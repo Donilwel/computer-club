@@ -25,7 +25,14 @@ func NewTariffHandler(tariffService usecase.TariffService, log *logrus.Logger) T
 	return &tariffHandler{tariffService: tariffService, log: log}
 }
 
-// GetTariff получение полного списка тарифов
+// GetTariff godoc
+// @Summary      Получение списка тарифов
+// @Description  Возвращает список всех доступных тарифов
+// @Tags         tariffs
+// @Produce      json
+// @Success      200 {array} models.Tariff
+// @Failure      500 {object} string "ошибка при поиске тарифов в базе данных"
+// @Router       /tariff [get]
 func (h tariffHandler) GetTariff(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение списка тарифов")
@@ -46,7 +53,17 @@ func (h tariffHandler) GetTariff(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetTariffByID получения тарифа по его ID
+// GetTariffByID godoc
+// @Summary      Получение тарифа по ID
+// @Description  Возвращает информацию о тарифе по указанному ID
+// @Tags         tariffs
+// @Produce      json
+// @Param        id path int true "ID тарифа"
+// @Success      200 {object} models.Tariff
+// @Failure      400 {object} string "ошибка чтения тариф id"
+// @Failure      404 {object} string "тариф не найден"
+// @Failure      500 {object} string "внутренняя ошибка сервера"
+// @Router       /tariff/{id} [get]
 func (h tariffHandler) GetTariffByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	idStr := chi.URLParam(r, "id")

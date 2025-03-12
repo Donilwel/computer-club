@@ -1,6 +1,7 @@
 package di
 
 import (
+	_ "computer-club/docs"
 	"computer-club/internal/config"
 	"computer-club/internal/delivery/httpService"
 	"computer-club/internal/handlers"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"gorm.io/gorm"
 )
 
@@ -72,7 +74,7 @@ func NewContainer() *Container {
 	// Инициализация роутера
 	r := chi.NewRouter()
 	r.Use(middleware.LoggerMiddleware(log))
-
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
 	// Регистрация маршрутов
 	httpService.RegisterRoutes(r, userHandler, tariffHandler, sessionHandler, walletHandler, computerHandler)
 

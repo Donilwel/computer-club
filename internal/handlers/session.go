@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"computer-club/internal/middleware"
+	_ "computer-club/internal/repository/models"
 	"computer-club/internal/usecase"
 	"computer-club/pkg/errors"
 	"encoding/json"
@@ -24,7 +25,26 @@ func NewSessionHandler(sessionService usecase.SessionService, log *logrus.Logger
 	return sessionHandler{sessionService: sessionService, log: log}
 }
 
-// StartSession начинает новую сессию
+type StartSessionReq struct {
+	PCNumber int   `json:"pc_number"`
+	TariffID int64 `json:"tariff_id"`
+}
+
+// StartSession godoc
+// @Summary      Начало сессии
+// @Description  Запускает новую сессию для пользователя на указанном ПК с выбранным тарифом
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request body StartSessionReq true "Данные для старта сессии"
+// @Success      200 {object} models.Session
+// @Failure      400 {object} string "ошибка JSON запроса"
+// @Failure      401 {object} string "неправильный user_id в токене"
+// @Failure      404 {object} string "Не найдено - user, computer или tariff или кошелек"
+// @Failure      409 {object} string "Сессия уже активная или компьютер занят"
+// @Failure      500 {object} string "внутренняя проблема поиска в базе данных или ошибка сохранения изменения транзакции базы данных или редис не создал данные"
+// @Router       /session/start [post]
 func (h sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на начало сессии")
@@ -36,10 +56,7 @@ func (h sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		PCNumber int   `json:"pc_number"`
-		TariffID int64 `json:"tariff_id"`
-	}
+	var req StartSessionReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.WithError(err).Error("Ошибка декодирования JSON")
 		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
@@ -79,14 +96,29 @@ func (h sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// EndSession завершает активную сессию
+type EndSessionRequest struct {
+	SessionID int64 `json:"session_id" example:"123"`
+}
+
+// EndSession godoc
+// @Summary      Завершение сессии
+// @Description  Завершает активную сессию по её идентификатору
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request body EndSessionRequest true "Данные для завершения сессии"
+// @Success      200 {object} string "message": "Session ended successfully"
+// @Failure      400 {object} string "Некорректный запрос (например, session_id == 0)"
+// @Failure		 409 {object} string "Сессия уже завершена или компьютер уже свободный"
+// @Failure      404 {object} string "Сессия или компьютер не найдены"
+// @Failure      500 {object} string "Внутренняя ошибка сервера при закрытии сессии или транзакции базы данных или редис не удалил данные"
+// @Router       /session/end [post]
 func (h sessionHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на завершение сессии")
 
-	var req struct {
-		SessionID int64 `json:"session_id"`
-	}
+	var req EndSessionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.WithError(err).Error("Ошибка декодирования JSON")
 		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
@@ -104,8 +136,15 @@ func (h sessionHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 
 	err := h.sessionService.EndSession(ctx, req.SessionID)
 	if err != nil {
+		switch err {
+		case errors.ErrUserNotFound, errors.ErrComputerNotFound, errors.ErrTariffNotFound:
+			middleware.WriteError(w, http.StatusNotFound, err.Error())
+		case errors.ErrStatusSessionAlreadyFinished, errors.ErrComputerAlreadyFree:
+			middleware.WriteError(w, http.StatusConflict, err.Error())
+		default:
+			middleware.WriteError(w, http.StatusInternalServerError, err.Error())
+		}
 		h.log.WithError(err).Error("Ошибка завершения сессии")
-		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -120,7 +159,24 @@ func (h sessionHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetActiveSessions выводит список активных сессий
+type ActiveSessionResponse struct {
+	SessionID int64  `json:"session_id" example:"123"`
+	UserID    int64  `json:"user_id" example:"456"`
+	PCNumber  int    `json:"pc_number" example:"7"`
+	TariffID  int64  `json:"tariff_id" example:"3"`
+	Status    string `json:"status" example:"active"`
+}
+
+// GetActiveSessions godoc
+// @Summary      Получение активных сессий
+// @Description  Возвращает список всех активных сессий (только для администраторов)
+// @Tags         sessions
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {array} ActiveSessionResponse
+// @Failure      403 {object} string "ошибка доступа к текущему запросу. необходима роль пользователя: админ"
+// @Failure      500 {object} string "Внутренняя ошибка сервера"
+// @Router       /sessions/active [get]
 func (h sessionHandler) GetActiveSessions(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение активных сессий")

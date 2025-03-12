@@ -1,0 +1,763 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a sample API with Swagger",
+        "title": "API Computer-club",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/computers/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список всех компьютеров и их статусы (доступно только для администраторов)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "computers"
+                ],
+                "summary": "Получение статуса компьютеров",
+                "responses": {
+                    "200": {
+                        "description": "Успешный ответ",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Computer"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Ошибка доступа - недостаточно прав",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/info": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает информацию о пользователе, баланс и транзакции",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Получение информации о пользователе",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.UserInfoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный user_id",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Кошелек не найден или пользователь",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "description": "Проверяет email и пароль, возвращает JWT-токен",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Авторизация пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные для входа",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешный вход",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос (невалидный JSON)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Ошибка авторизации - неверный email или пароль",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/pay": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Администратор пополняет счет указанного пользователя (admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wallet"
+                ],
+                "summary": "Пополнение счета игрока",
+                "parameters": [
+                    {
+                        "description": "Данные для пополнения счета",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.PutMoneyReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Счет успешно пополнен",
+                        "schema": {
+                            "$ref": "#/definitions/models.Transaction"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос (например, сумма ≤ 0)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Ошибка доступа - недостаточно прав",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/register": {
+            "post": {
+                "description": "Создает нового пользователя с указанными данными",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Регистрация пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные для регистрации",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RegisterUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Пользователь успешно зарегистрирован",
+                        "schema": {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные (пустое имя, email, короткий пароль, неверная роль)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "Пользователь уже существует",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/end": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Завершает активную сессию по её идентификатору",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Завершение сессии",
+                "parameters": [
+                    {
+                        "description": "Данные для завершения сессии",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.EndSessionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message\": \"Session ended successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос (например, session_id == 0)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Сессия или компьютер не найдены",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "Сессия уже завершена или компьютер уже свободный",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера при закрытии сессии или транзакции базы данных или редис не удалил данные",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/start": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Запускает новую сессию для пользователя на указанном ПК с выбранным тарифом",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Начало сессии",
+                "parameters": [
+                    {
+                        "description": "Данные для старта сессии",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StartSessionReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Session"
+                        }
+                    },
+                    "400": {
+                        "description": "ошибка JSON запроса",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "неправильный user_id в токене",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Не найдено - user, computer или tariff или кошелек",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "Сессия уже активная или компьютер занят",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "внутренняя проблема поиска в базе данных или ошибка сохранения изменения транзакции базы данных или редис не создал данные",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/sessions/active": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список всех активных сессий (только для администраторов)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Получение активных сессий",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.ActiveSessionResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ошибка доступа к текущему запросу. необходима роль пользователя: админ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/tariff": {
+            "get": {
+                "description": "Возвращает список всех доступных тарифов",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tariffs"
+                ],
+                "summary": "Получение списка тарифов",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Tariff"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "ошибка при поиске тарифов в базе данных",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/tariff/{id}": {
+            "get": {
+                "description": "Возвращает информацию о тарифе по указанному ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tariffs"
+                ],
+                "summary": "Получение тарифа по ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID тарифа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Tariff"
+                        }
+                    },
+                    "400": {
+                        "description": "ошибка чтения тариф id",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "тариф не найден",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.ActiveSessionResponse": {
+            "type": "object",
+            "properties": {
+                "pc_number": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "session_id": {
+                    "type": "integer",
+                    "example": 123
+                },
+                "status": {
+                    "type": "string",
+                    "example": "active"
+                },
+                "tariff_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 456
+                }
+            }
+        },
+        "handlers.EndSessionRequest": {
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "integer",
+                    "example": 123
+                }
+            }
+        },
+        "handlers.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "secret"
+                }
+            }
+        },
+        "handlers.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+            }
+        },
+        "handlers.PutMoneyReq": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.RegisterUserRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "ivan@example.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Иван Иванов"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "secret123"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "customer"
+                }
+            }
+        },
+        "handlers.StartSessionReq": {
+            "type": "object",
+            "properties": {
+                "pc_number": {
+                    "type": "integer"
+                },
+                "tariff_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.UserInfoResponse": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "number",
+                    "example": 100.5
+                },
+                "transactions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Transaction"
+                    }
+                },
+                "user": {
+                    "$ref": "#/definitions/models.User"
+                }
+            }
+        },
+        "models.Computer": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "pc_number": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.ComputerStatus"
+                }
+            }
+        },
+        "models.ComputerStatus": {
+            "type": "string",
+            "enum": [
+                "free",
+                "busy"
+            ],
+            "x-enum-varnames": [
+                "Free",
+                "Busy"
+            ]
+        },
+        "models.Session": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "pc_number": {
+                    "type": "integer"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.SessionStatus"
+                },
+                "tariff_id": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.SessionStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "finished"
+            ],
+            "x-enum-varnames": [
+                "Active",
+                "Finished"
+            ]
+        },
+        "models.Tariff": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.Transaction": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "tariff_id": {
+                    "type": "integer"
+                },
+                "type": {
+                    "$ref": "#/definitions/models.TransactionType"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.TransactionType": {
+            "type": "string",
+            "enum": [
+                "add",
+                "buy"
+            ],
+            "x-enum-varnames": [
+                "Add",
+                "Buy"
+            ]
+        },
+        "models.User": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

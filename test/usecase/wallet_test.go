@@ -205,6 +205,7 @@ func TestPutMoneyOnWallet(t *testing.T) {
 		})
 	}
 }
+
 func TestGetTransactions(t *testing.T) {
 	tests := []struct {
 		name          string
