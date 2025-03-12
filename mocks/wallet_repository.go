@@ -16,6 +16,26 @@ type WalletRepository struct {
 	mock.Mock
 }
 
+// BeginTransaction provides a mock function with given fields: ctx
+func (_m *WalletRepository) BeginTransaction(ctx context.Context) repository.Transaction {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeginTransaction")
+	}
+
+	var r0 repository.Transaction
+	if rf, ok := ret.Get(0).(func(context.Context) repository.Transaction); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(repository.Transaction)
+		}
+	}
+
+	return r0
+}
+
 // CreateTransaction provides a mock function with given fields: ctx, tx, userID, amount, typ, tariff
 func (_m *WalletRepository) CreateTransaction(ctx context.Context, tx repository.Transaction, userID int64, amount float64, typ string, tariff *models.Tariff) (*models.Transaction, error) {
 	ret := _m.Called(ctx, tx, userID, amount, typ, tariff)
@@ -64,17 +84,17 @@ func (_m *WalletRepository) CreateWallet(ctx context.Context, tx repository.Tran
 	return r0
 }
 
-// Deposit provides a mock function with given fields: ctx, userID, amount
-func (_m *WalletRepository) Deposit(ctx context.Context, userID int64, amount float64) error {
-	ret := _m.Called(ctx, userID, amount)
+// Deposit provides a mock function with given fields: ctx, tx, userID, amount
+func (_m *WalletRepository) Deposit(ctx context.Context, tx repository.Transaction, userID int64, amount float64) error {
+	ret := _m.Called(ctx, tx, userID, amount)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Deposit")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64, float64) error); ok {
-		r0 = rf(ctx, userID, amount)
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Transaction, int64, float64) error); ok {
+		r0 = rf(ctx, tx, userID, amount)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -31,7 +31,7 @@ func (h tariffHandler) GetTariff(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Запрос на получение списка тарифов")
 	tariffs, err := h.tariffService.GetTariff(ctx)
 	if err != nil {
-		h.log.Error("ошибка при запросе списка тарифов")
+		h.log.Error(err)
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -61,7 +61,7 @@ func (h tariffHandler) GetTariffByID(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Запрос на получение тарифа по id")
 	tariff, err := h.tariffService.GetTariffByID(ctx, id)
 	if err != nil {
-		h.log.Error("ошибка при запросе тарифа по id")
+		h.log.WithError(err).Error("ошибка при запросе тарифа по id")
 		middleware.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
