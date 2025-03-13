@@ -117,12 +117,6 @@ func (r *PostgresSessionRepo) CreateSession(ctx context.Context, tx Transaction,
 		return nil, errors.ErrCreatedSession
 	}
 
-	if err := db.WithContext(ctx).Model(&models.Computer{}).
-		Where("pc_number = ?", pcNumber).
-		Update("status", models.Busy).Error; err != nil {
-		return nil, errors.ErrUpdateComputerStatus
-	}
-
 	return session, nil
 }
 

@@ -16,6 +16,54 @@ type ComputerRepository struct {
 	mock.Mock
 }
 
+// ChangeComputerStatus provides a mock function with given fields: ctx, tx, computer, status
+func (_m *ComputerRepository) ChangeComputerStatus(ctx context.Context, tx repository.Transaction, computer *models.Computer, status string) error {
+	ret := _m.Called(ctx, tx, computer, status)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ChangeComputerStatus")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Transaction, *models.Computer, string) error); ok {
+		r0 = rf(ctx, tx, computer, status)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// GetComputerByID provides a mock function with given fields: ctx, id
+func (_m *ComputerRepository) GetComputerByID(ctx context.Context, id int) (*models.Computer, error) {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetComputerByID")
+	}
+
+	var r0 *models.Computer
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, int) (*models.Computer, error)); ok {
+		return rf(ctx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int) *models.Computer); ok {
+		r0 = rf(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.Computer)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetComputers provides a mock function with given fields: ctx
 func (_m *ComputerRepository) GetComputers(ctx context.Context) ([]models.Computer, error) {
 	ret := _m.Called(ctx)
@@ -44,52 +92,6 @@ func (_m *ComputerRepository) GetComputers(ctx context.Context) ([]models.Comput
 	}
 
 	return r0, r1
-}
-
-// IsComputerAvailable provides a mock function with given fields: ctx, tx, number
-func (_m *ComputerRepository) IsComputerAvailable(ctx context.Context, tx repository.Transaction, number int) (bool, error) {
-	ret := _m.Called(ctx, tx, number)
-
-	if len(ret) == 0 {
-		panic("no return value specified for IsComputerAvailable")
-	}
-
-	var r0 bool
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, repository.Transaction, int) (bool, error)); ok {
-		return rf(ctx, tx, number)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, repository.Transaction, int) bool); ok {
-		r0 = rf(ctx, tx, number)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, repository.Transaction, int) error); ok {
-		r1 = rf(ctx, tx, number)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MarkComputerFree provides a mock function with given fields: ctx, tx, number
-func (_m *ComputerRepository) MarkComputerFree(ctx context.Context, tx repository.Transaction, number int) error {
-	ret := _m.Called(ctx, tx, number)
-
-	if len(ret) == 0 {
-		panic("no return value specified for MarkComputerFree")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, repository.Transaction, int) error); ok {
-		r0 = rf(ctx, tx, number)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
 }
 
 // NewComputerRepository creates a new instance of ComputerRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

@@ -52,11 +52,12 @@ func (u *SessionUsecase) StartSession(ctx context.Context, userID int64,
 		return nil, errors.ErrSessionActive
 	}
 
-	pcBusy, err := u.computerRepo.IsComputerAvailable(ctx, tx, pcNumber)
+	computer, err := u.computerRepo.GetComputerByID(ctx, pcNumber)
 	if err != nil {
 		return nil, err
 	}
-	if pcBusy {
+
+	if computer.Status == models.Busy {
 		return nil, errors.ErrPCBusy
 	}
 
@@ -84,6 +85,11 @@ func (u *SessionUsecase) StartSession(ctx context.Context, userID int64,
 	}
 
 	session, err := u.sessionRepository.CreateSession(ctx, tx, userID, pcNumber, tariffID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = u.computerRepo.ChangeComputerStatus(ctx, tx, computer, string(models.Busy))
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +125,16 @@ func (u *SessionUsecase) EndSession(ctx context.Context, sessionID int64) error 
 		return err
 	}
 
-	err = u.computerRepo.MarkComputerFree(ctx, tx, session.PCNumber)
+	computer, err := u.computerRepo.GetComputerByID(ctx, session.PCNumber)
+	if err != nil {
+		return err
+	}
+
+	if computer.Status == models.Free {
+		return errors.ErrComputerAlreadyFree
+	}
+
+	err = u.computerRepo.ChangeComputerStatus(ctx, tx, computer, string(models.Free))
 	if err != nil {
 		return err
 	}
