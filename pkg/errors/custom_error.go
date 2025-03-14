@@ -71,7 +71,7 @@ var (
 	ErrStartTransaction = errors.New("ошибка при создании транзакции")
 
 	// Ошибки кэша и Redis
-	ErrDeleteRedis = errors.New("ошибка удаления данных из Редис")
+	ErrDeleteCashedData = errors.New("ошибка удаления данных из Редис")
 
 	// Общие ошибки
 	ErrJSONRequest = errors.New("ошибка JSON запроса")

@@ -133,6 +133,7 @@ func (r *PostgresSessionRepo) MarkSessionFinished(ctx context.Context, tx Transa
 	}
 	return nil
 }
+
 func (r *PostgresSessionRepo) CacheSession(ctx context.Context, session *models.Session) error {
 	sessionJSON, err := json.Marshal(session)
 	if err != nil {
@@ -149,7 +150,7 @@ func (r *PostgresSessionRepo) CacheSession(ctx context.Context, session *models.
 
 func (r *PostgresSessionRepo) DeleteSessionCache(ctx context.Context, sessionID int64) error {
 	if err := r.redis.Del(ctx, getSessionKey(sessionID)).Err(); err != nil {
-		return errors.ErrDeleteRedis
+		return errors.ErrDeleteCashedData
 	}
 	return nil
 }

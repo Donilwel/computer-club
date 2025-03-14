@@ -26,6 +26,7 @@ func TestStartSession(t *testing.T) {
 				tariffID := int64(5)
 				tariff := &models.Tariff{ID: tariffID, Price: 100}
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Free}
 				session := &models.Session{ID: 1, UserID: userID, PCNumber: pcNumber, TariffID: tariffID}
 
 				tx.On("Rollback").Return(nil)
@@ -34,12 +35,13 @@ func TestStartSession(t *testing.T) {
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, nil)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
 				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return(tariff, nil)
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
 				walletRepo.On("CreateTransaction", mock.Anything, tx, userID, tariff.Price, mock.Anything, tariff).Return(nil, nil)
 				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return(session, nil)
+				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Busy)).Return(nil)
 				sessionRepo.On("CacheSession", mock.Anything, session).Return(nil)
 			},
 			expectedError: nil,
@@ -70,15 +72,16 @@ func TestStartSession(t *testing.T) {
 			name: "PC not found",
 			mockSetup: func(userRepo *mocks.UserRepository, sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tariffRepo *mocks.TariffRepository, walletRepo *mocks.WalletRepository, tx *mocks.Transaction) {
 				userID := int64(1)
-				user := &models.User{ID: userID}
 				pcNumber := 101
+				user := &models.User{ID: userID}
 
 				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
 
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, errors.ErrComputerNotFound)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(nil, errors.ErrComputerNotFound)
 			},
 			expectedError: errors.ErrComputerNotFound,
 		},
@@ -88,13 +91,15 @@ func TestStartSession(t *testing.T) {
 				userID := int64(1)
 				pcNumber := 101
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Busy}
 
 				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
 
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(true, nil)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
 			},
 			expectedError: errors.ErrPCBusy,
 		},
@@ -104,15 +109,18 @@ func TestStartSession(t *testing.T) {
 				userID := int64(1)
 				pcNumber := 101
 				tariffID := int64(5)
+				tariff := &models.Tariff{ID: tariffID, Price: 100}
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Free}
 
 				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
 
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, nil)
-				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return((*models.Tariff)(nil), errors.ErrTariffNotFound)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
+				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return(tariff, errors.ErrTariffNotFound)
 			},
 			expectedError: errors.ErrTariffNotFound,
 		},
@@ -124,6 +132,7 @@ func TestStartSession(t *testing.T) {
 				tariffID := int64(5)
 				tariff := &models.Tariff{ID: tariffID, Price: 100}
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Free}
 
 				tx.On("Rollback").Return(nil)
 				tx.On("Commit").Return(nil)
@@ -131,7 +140,7 @@ func TestStartSession(t *testing.T) {
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, nil)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
 				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return(tariff, nil)
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(0.0, errors.ErrCheckBalance)
 			},
@@ -145,16 +154,17 @@ func TestStartSession(t *testing.T) {
 				tariffID := int64(5)
 				tariff := &models.Tariff{ID: tariffID, Price: 100}
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Free}
 
 				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
 
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, nil)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
 				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return(tariff, nil)
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(50), nil)
-
 			},
 			expectedError: errors.ErrInsufficientFunds,
 		},
@@ -166,13 +176,15 @@ func TestStartSession(t *testing.T) {
 				tariffID := int64(5)
 				tariff := &models.Tariff{ID: tariffID, Price: 100}
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Free}
 
 				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
 
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, nil)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
 				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return(tariff, nil)
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(errors.ErrWithdraw)
@@ -187,13 +199,15 @@ func TestStartSession(t *testing.T) {
 				tariffID := int64(5)
 				tariff := &models.Tariff{ID: tariffID, Price: 100}
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Free}
 
 				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
 
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, nil)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
 				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return(tariff, nil)
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
@@ -209,41 +223,47 @@ func TestStartSession(t *testing.T) {
 				tariffID := int64(5)
 				tariff := &models.Tariff{ID: tariffID, Price: 100}
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Free}
 
 				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
 
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, nil)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
 				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return(tariff, nil)
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
 				walletRepo.On("CreateTransaction", mock.Anything, tx, userID, tariff.Price, mock.Anything, tariff).Return(nil, nil)
-				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return((*models.Session)(nil), errors.ErrCreatedSession)
+				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return(nil, errors.ErrCreatedSession)
 			},
 			expectedError: errors.ErrCreatedSession,
 		},
 		{
-			name: "Create Session Failed Update Computer",
+			name: "Failed Update Computer status",
 			mockSetup: func(userRepo *mocks.UserRepository, sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tariffRepo *mocks.TariffRepository, walletRepo *mocks.WalletRepository, tx *mocks.Transaction) {
 				userID := int64(1)
 				pcNumber := 101
 				tariffID := int64(5)
 				tariff := &models.Tariff{ID: tariffID, Price: 100}
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Free}
+				session := &models.Session{ID: 1, UserID: userID, PCNumber: pcNumber, TariffID: tariffID}
 
 				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
 
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, nil)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
 				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return(tariff, nil)
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
 				walletRepo.On("CreateTransaction", mock.Anything, tx, userID, tariff.Price, mock.Anything, tariff).Return(nil, nil)
-				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return((*models.Session)(nil), errors.ErrUpdateComputerStatus)
+				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return(session, nil)
+				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Busy)).Return(errors.ErrUpdateComputerStatus)
 			},
 			expectedError: errors.ErrUpdateComputerStatus,
 		},
@@ -255,6 +275,7 @@ func TestStartSession(t *testing.T) {
 				tariffID := int64(5)
 				tariff := &models.Tariff{ID: tariffID, Price: 100}
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Free}
 				session := &models.Session{ID: 1, UserID: userID, PCNumber: pcNumber, TariffID: tariffID}
 
 				tx.On("Rollback").Return(nil)
@@ -263,38 +284,42 @@ func TestStartSession(t *testing.T) {
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, nil)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
 				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return(tariff, nil)
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
 				walletRepo.On("CreateTransaction", mock.Anything, tx, userID, tariff.Price, mock.Anything, tariff).Return(nil, nil)
 				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return(session, nil)
+				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Busy)).Return(nil)
+				sessionRepo.On("CacheSession", mock.Anything, session).Return(nil)
 			},
 			expectedError: errors.ErrCommitData,
 		},
 		{
-			name: "Transaction Commit Failure",
+			name: "Cashed Session Failure",
 			mockSetup: func(userRepo *mocks.UserRepository, sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tariffRepo *mocks.TariffRepository, walletRepo *mocks.WalletRepository, tx *mocks.Transaction) {
 				userID := int64(1)
 				pcNumber := 101
 				tariffID := int64(5)
 				tariff := &models.Tariff{ID: tariffID, Price: 100}
 				user := &models.User{ID: userID}
+				computer := &models.Computer{ID: int64(pcNumber), PCNumber: pcNumber, Status: models.Free}
 				session := &models.Session{ID: 1, UserID: userID, PCNumber: pcNumber, TariffID: tariffID}
 
 				tx.On("Rollback").Return(nil)
-				tx.On("Commit").Return(errors.ErrCacheSession)
+				tx.On("Commit").Return(nil)
 
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("HasActiveSession", mock.Anything, tx, userID).Return(false, nil)
-				computerRepo.On("IsComputerAvailable", mock.Anything, tx, pcNumber).Return(false, nil)
+				computerRepo.On("GetComputerByID", mock.Anything, pcNumber).Return(computer, nil)
 				tariffRepo.On("GetTariffByID", mock.Anything, tariffID).Return(tariff, nil)
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
 				walletRepo.On("CreateTransaction", mock.Anything, tx, userID, tariff.Price, mock.Anything, tariff).Return(nil, nil)
 				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return(session, nil)
-				sessionRepo.On("CacheSession", mock.Anything, session).Return(nil)
+				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Busy)).Return(nil)
+				sessionRepo.On("CacheSession", mock.Anything, session).Return(errors.ErrCacheSession)
 			},
 			expectedError: errors.ErrCacheSession,
 		},
@@ -337,6 +362,7 @@ func TestEndSession(t *testing.T) {
 			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
 				sessionID := int64(1)
 				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
+				computer := &models.Computer{ID: int64(session.PCNumber), PCNumber: session.PCNumber, Status: models.Busy}
 
 				tx.On("Rollback").Return(nil)
 				tx.On("Commit").Return(nil)
@@ -344,7 +370,8 @@ func TestEndSession(t *testing.T) {
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
 				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
-				computerRepo.On("MarkComputerFree", mock.Anything, tx, session.PCNumber).Return(nil)
+				computerRepo.On("GetComputerByID", mock.Anything, session.PCNumber).Return(computer, nil)
+				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Free)).Return(nil)
 				sessionRepo.On("DeleteSessionCache", mock.Anything, sessionID).Return(nil)
 			},
 			expectedError: nil,
@@ -356,7 +383,7 @@ func TestEndSession(t *testing.T) {
 
 				tx.On("Rollback").Return(nil)
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
-				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return((*models.Session)(nil), errors.ErrSessionNotFound)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(nil, errors.ErrSessionNotFound)
 			},
 			expectedError: errors.ErrSessionNotFound,
 		},
@@ -386,37 +413,7 @@ func TestEndSession(t *testing.T) {
 			expectedError: errors.ErrUpdateSession,
 		},
 		{
-			name: "Upload Status Computer Failed",
-			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
-				sessionID := int64(1)
-				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
-
-				tx.On("Rollback").Return(nil)
-				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
-				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
-				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
-				computerRepo.On("MarkComputerFree", mock.Anything, tx, session.PCNumber).Return(errors.ErrUpdateComputerStatus)
-			},
-			expectedError: errors.ErrUpdateComputerStatus,
-		},
-		{
-			name: "Transaction Commit Failed",
-			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
-				sessionID := int64(1)
-				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
-
-				tx.On("Rollback").Return(nil)
-				tx.On("Commit").Return(errors.ErrCommitData)
-
-				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
-				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
-				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
-				computerRepo.On("MarkComputerFree", mock.Anything, tx, session.PCNumber).Return(nil)
-			},
-			expectedError: errors.ErrCommitData,
-		},
-		{
-			name: "Delete Cashed Data Failed",
+			name: "Computer Not Found",
 			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
 				sessionID := int64(1)
 				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
@@ -427,10 +424,81 @@ func TestEndSession(t *testing.T) {
 				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
 				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
 				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
-				computerRepo.On("MarkComputerFree", mock.Anything, tx, session.PCNumber).Return(nil)
-				sessionRepo.On("DeleteSessionCache", mock.Anything, sessionID).Return(errors.ErrDeleteRedis)
+				computerRepo.On("GetComputerByID", mock.Anything, session.PCNumber).Return(nil, errors.ErrComputerNotFound)
 			},
-			expectedError: errors.ErrDeleteRedis,
+			expectedError: errors.ErrComputerNotFound,
+		},
+		{
+			name: "Status Computer Already Free",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
+				computer := &models.Computer{ID: int64(session.PCNumber), PCNumber: session.PCNumber, Status: models.Free}
+
+				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
+
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
+				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
+				computerRepo.On("GetComputerByID", mock.Anything, session.PCNumber).Return(computer, nil)
+			},
+			expectedError: errors.ErrComputerAlreadyFree,
+		},
+		{
+			name: "Update Computer Status Failed",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
+				computer := &models.Computer{ID: int64(session.PCNumber), PCNumber: session.PCNumber, Status: models.Busy}
+
+				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
+
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
+				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
+				computerRepo.On("GetComputerByID", mock.Anything, session.PCNumber).Return(computer, nil)
+				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Free)).Return(errors.ErrUpdateSession)
+			},
+			expectedError: errors.ErrUpdateSession,
+		},
+		{
+			name: "Transaction Commit Failed",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
+				computer := &models.Computer{ID: int64(session.PCNumber), PCNumber: session.PCNumber, Status: models.Busy}
+
+				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(errors.ErrCommitData)
+
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
+				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
+				computerRepo.On("GetComputerByID", mock.Anything, session.PCNumber).Return(computer, nil)
+				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Free)).Return(nil)
+			},
+			expectedError: errors.ErrCommitData,
+		},
+		{
+			name: "Delete Cashed Data Failed",
+			mockSetup: func(sessionRepo *mocks.SessionRepository, computerRepo *mocks.ComputerRepository, tx *mocks.Transaction) {
+				sessionID := int64(1)
+				session := &models.Session{ID: sessionID, PCNumber: 5, Status: models.Active}
+				computer := &models.Computer{ID: int64(session.PCNumber), PCNumber: session.PCNumber, Status: models.Busy}
+
+				tx.On("Rollback").Return(nil)
+				tx.On("Commit").Return(nil)
+
+				sessionRepo.On("BeginTransaction", mock.Anything).Return(tx, nil)
+				sessionRepo.On("GetSessionByID", mock.Anything, tx, sessionID).Return(session, nil)
+				sessionRepo.On("MarkSessionFinished", mock.Anything, tx, sessionID).Return(nil)
+				computerRepo.On("GetComputerByID", mock.Anything, session.PCNumber).Return(computer, nil)
+				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Free)).Return(nil)
+				sessionRepo.On("DeleteSessionCache", mock.Anything, sessionID).Return(errors.ErrDeleteCashedData)
+			},
+			expectedError: errors.ErrDeleteCashedData,
 		},
 	}
 
