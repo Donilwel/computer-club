@@ -5,15 +5,12 @@ import (
 	"computer-club/internal/repository/models"
 	"computer-club/pkg/errors"
 	"context"
-	"fmt"
-	"time"
 )
 
 type SessionService interface {
 	StartSession(ctx context.Context, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
 	EndSession(ctx context.Context, sessionID int64) error
 	GetActiveSessions(ctx context.Context) []*models.Session
-	CheckExpiredSessions(ctx context.Context)
 }
 
 type SessionUsecase struct {
@@ -87,7 +84,7 @@ func (u *SessionUsecase) StartSession(ctx context.Context, userID int64,
 		return nil, err
 	}
 
-	session, err := u.sessionRepository.CreateSession(ctx, tx, userID, pcNumber, tariff)
+	session, err := u.sessionRepository.CreateSession(ctx, tx, userID, pcNumber, tariffID)
 	if err != nil {
 		return nil, err
 	}
@@ -157,19 +154,4 @@ func (u *SessionUsecase) EndSession(ctx context.Context, sessionID int64) error 
 
 func (u *SessionUsecase) GetActiveSessions(ctx context.Context) []*models.Session {
 	return u.sessionRepository.GetActiveSessions(ctx)
-}
-
-func (u *SessionUsecase) CheckExpiredSessions(ctx context.Context) {
-	sessions := u.sessionRepository.GetActiveSessions(ctx)
-	now := time.Now()
-
-	for _, session := range sessions {
-		if session.EndTime != nil && session.EndTime.Before(now) {
-			fmt.Printf("Сессия %d просрочена, завершаем...\n", session.ID)
-			err := u.EndSession(ctx, session.ID)
-			if err != nil {
-				fmt.Printf("Ошибка при завершении сессии %d: %v\n", session.ID, err)
-			}
-		}
-	}
 }

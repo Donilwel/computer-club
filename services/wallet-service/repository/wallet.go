@@ -1,0 +1,117 @@
+package repository
+
+import (
+	models2 "computer-club/internal/repository/models"
+	"computer-club/pkg/errors"
+	"context"
+	"gorm.io/gorm"
+)
+
+type WalletRepository interface {
+	GetBalance(ctx context.Context, userID int64) (float64, error)
+	GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error)
+	CreateWallet(ctx context.Context, tx Transaction, wallet *models2.Wallet) error
+	Deposit(ctx context.Context, tx Transaction, userID int64, amount float64) error
+	Withdraw(ctx context.Context, tx Transaction, userID int64, amount float64) error
+	CreateTransaction(ctx context.Context, tx Transaction, userID int64,
+		amount float64, typ string, tariff *models2.Tariff) (*models2.Transaction, error)
+	BeginTransaction(ctx context.Context) Transaction
+}
+
+type PostgresWalletRepo struct {
+	db *gorm.DB
+}
+
+func NewPostgresWalletRepo(db *gorm.DB) WalletRepository {
+	return &PostgresWalletRepo{db: db}
+}
+
+func (r *PostgresWalletRepo) BeginTransaction(ctx context.Context) Transaction {
+	return &GormTransaction{tx: r.db.WithContext(ctx).Begin()}
+}
+
+func (r *PostgresWalletRepo) CreateTransaction(ctx context.Context, tx Transaction, userID int64,
+	amount float64, typ string, tariff *models2.Tariff) (*models2.Transaction, error) {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
+	var tariffID int64
+	if tariff == nil {
+		tariffID = -1
+	} else {
+		tariffID = tariff.ID
+	}
+
+	transaction := models2.Transaction{
+		UserID:   userID,
+		Amount:   amount,
+		Type:     models2.TransactionType(typ),
+		TariffID: tariffID,
+	}
+	if err := db.WithContext(ctx).Create(&transaction).Error; err != nil {
+		return nil, errors.ErrCreateTransaction
+	}
+	return &transaction, nil
+}
+
+func (r *PostgresWalletRepo) Deposit(ctx context.Context, tx Transaction, userID int64, amount float64) error {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
+	err := db.WithContext(ctx).
+		Model(&models2.Wallet{}).
+		Where("user_id = ?", userID).
+		Update("balance", gorm.Expr("balance + ?", amount)).Error
+	if err != nil {
+		return errors.ErrToDeposit
+	}
+	return nil
+}
+
+func (r *PostgresWalletRepo) Withdraw(ctx context.Context, tx Transaction, userID int64, amount float64) error {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
+	err := db.WithContext(ctx).Model(&models2.Wallet{}).
+		Where("user_id = ? AND balance >= ?", userID, amount).
+		Update("balance", gorm.Expr("balance - ?", amount)).Error
+	if err != nil {
+		return errors.ErrWithdraw
+	}
+	return nil
+}
+
+func (r *PostgresWalletRepo) GetBalance(ctx context.Context, userID int64) (float64, error) {
+	var wallet models2.Wallet
+	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&wallet).Error; err != nil {
+		return 0.0, errors.ErrCheckBalance
+	}
+	return wallet.Balance, nil
+}
+
+func (r *PostgresWalletRepo) GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error) {
+	var transactions []models2.Transaction
+	err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("created_at DESC").
+		Limit(50).
+		Find(&transactions).Error
+	if err != nil {
+		return nil, errors.ErrCheckTransaction
+	}
+	return transactions, nil
+}
+
+func (r *PostgresWalletRepo) CreateWallet(ctx context.Context, tx Transaction, wallet *models2.Wallet) error {
+	db := r.db
+	if tx != nil {
+		db = tx.DB()
+	}
+	if err := db.WithContext(ctx).Create(wallet).Error; err != nil {
+		return errors.ErrCreateWallet
+	}
+	return nil
+}

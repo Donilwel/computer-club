@@ -32,11 +32,11 @@ type Container struct {
 	ComputerRepo    repository.ComputerRepository
 	TariffRepo      repository.TariffRepository
 	WalletRepo      repository.WalletRepository
-	UserUsecase     *usecase.UserService
-	SessionUsecase  *usecase.SessionService
-	ComputerUsecase *usecase.ComputerService
-	TariffUsecase   *usecase.TariffService
-	WalletUsecase   *usecase.WalletService
+	UserUsecase     usecase.UserService
+	SessionUsecase  usecase.SessionService
+	ComputerUsecase usecase.ComputerService
+	TariffUsecase   usecase.TariffService
+	WalletUsecase   usecase.WalletService
 	Router          *chi.Mux
 }
 
@@ -88,11 +88,11 @@ func NewContainer() *Container {
 		ComputerRepo:    computerRepo,
 		TariffRepo:      tariffRepo,
 		WalletRepo:      walletRepo,
-		UserUsecase:     &userUsecase,
-		SessionUsecase:  &sessionUsecase,
-		ComputerUsecase: &computerUsecase,
-		TariffUsecase:   &tariffUsecase,
-		WalletUsecase:   &walletUsecase,
+		UserUsecase:     userUsecase,
+		SessionUsecase:  sessionUsecase,
+		ComputerUsecase: computerUsecase,
+		TariffUsecase:   tariffUsecase,
+		WalletUsecase:   walletUsecase,
 		Router:          r,
 	}
 }

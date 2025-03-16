@@ -17,7 +17,7 @@ type SessionRepository interface {
 	GetSessionByID(ctx context.Context, tx Transaction, sessionID int64) (*models.Session, error)
 	CheckStatus(session models.Session, status string) error
 	HasActiveSession(ctx context.Context, tx Transaction, userID int64) (bool, error)
-	CreateSession(ctx context.Context, tx Transaction, userID int64, pcNumber int, tariff *models.Tariff) (*models.Session, error)
+	CreateSession(ctx context.Context, tx Transaction, userID int64, pcNumber int, tariffID int64) (*models.Session, error)
 	MarkSessionFinished(ctx context.Context, tx Transaction, sessionID int64) error
 	CacheSession(ctx context.Context, session *models.Session) error
 	DeleteSessionCache(ctx context.Context, id int64) error
@@ -96,31 +96,21 @@ func (r *PostgresSessionRepo) GetActiveSessions(ctx context.Context) []*models.S
 	return sessions
 }
 
-func (r *PostgresSessionRepo) CreateSession(ctx context.Context, tx Transaction, userID int64, pcNumber int, tariff *models.Tariff) (*models.Session, error) {
+func (r *PostgresSessionRepo) CreateSession(ctx context.Context, tx Transaction, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
 	db := r.db
 	if tx != nil {
 		db = tx.DB()
 	}
-
-	if tariff == nil {
-		return nil, errors.ErrTariffNotFound
-	}
-
 	startTime := time.Now()
-	var endTime *time.Time
-
-	if tariff.Duration > 0 {
-		calculatedEndTime := startTime.Add(time.Duration(tariff.Duration) * time.Minute)
-		endTime = &calculatedEndTime
-	}
+	endTime := startTime.Add(2 * time.Hour)
 
 	session := &models.Session{
 		UserID:    userID,
 		PCNumber:  pcNumber,
-		TariffID:  tariff.ID,
+		TariffID:  tariffID,
 		Status:    models.Active,
 		StartTime: startTime,
-		EndTime:   endTime,
+		EndTime:   &endTime,
 	}
 
 	if err := db.WithContext(ctx).Create(session).Error; err != nil {

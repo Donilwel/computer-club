@@ -34,6 +34,22 @@ func (s *Server) Run() {
 	defer stop()
 
 	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				s.container.Log.Info("Проверяем просроченные сессии...")
+				s.container.SessionUsecase.CheckExpiredSessions(context.Background())
+			case <-ctx.Done():
+				s.container.Log.Info("Остановка фоновой проверки сессий...")
+				return
+			}
+		}
+	}()
+
+	go func() {
 		fmt.Println("HTTP сервер запущен на порту:", s.container.Cfg.Server.HTTPPort)
 		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			s.container.Log.Fatal("Ошибка HTTP сервера:", err)

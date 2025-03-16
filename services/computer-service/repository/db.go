@@ -49,7 +49,6 @@ func Migrate(db *gorm.DB) {
 			{ID: 5, Name: "Всю ночь", Price: 500, Duration: 480},
 			{ID: 6, Name: "Ночной (4ч)", Price: 350, Duration: 240},
 			{ID: 7, Name: "Ночной (6ч)", Price: 450, Duration: 360},
-			{ID: 8, Name: "Testing (3 min)", Price: 800, Duration: 3},
 		}
 
 		for _, tariff := range tariffs {
