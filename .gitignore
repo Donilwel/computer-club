@@ -1,0 +1,57 @@
+# Бинарные файлы
+*.exe
+*.dll
+*.so
+*.dylib
+*.out
+*.a
+*.o
+
+# Кэш Go
+/go/bin/
+/go/pkg/
+*.test
+*.prof
+
+# Сборка проекта
+bin/
+build/
+
+# Конфигурационные файлы и секретные данные
+.env
+.env.local
+config.yaml
+config.json
+config.toml
+
+# Логи и временные файлы
+*.log
+*.tmp
+/tmp/
+/logs/
+/debug/
+
+# Модули Go
+vendor/
+go.sum
+go.mod~
+
+# IDE и редакторы
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*.swn
+
+
+# Docker
+docker-compose.override.yml
+docker-compose.logs
+.dockerignore
+
+# Redis & PostgreSQL (если используются локально)
+*.rdb
+*.sql
+*.sqlite
+pgdata/
