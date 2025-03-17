@@ -11,7 +11,7 @@ type WalletService interface {
 	PutMoneyOnWallet(ctx context.Context, userID int64, amount float64) (*models2.Transaction, error)
 	Withdraw(ctx context.Context, userID int64, amount float64) error
 	GetBalance(ctx context.Context, userID int64) (float64, error)
-	GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error)
+	GetTransactions(ctx context.Context, userID int64) ([]*models2.Transaction, error)
 }
 
 type WalletUsecase struct {
@@ -80,7 +80,7 @@ func (u *WalletUsecase) GetBalance(ctx context.Context, userID int64) (float64, 
 	return u.walletRepo.GetBalance(ctx, userID)
 }
 
-func (u *WalletUsecase) GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error) {
+func (u *WalletUsecase) GetTransactions(ctx context.Context, userID int64) ([]*models2.Transaction, error) {
 	if _, err := u.userRepo.GetUserByID(ctx, userID); err != nil {
 		return nil, err
 	}

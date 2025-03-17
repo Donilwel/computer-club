@@ -501,4 +501,27 @@ paths:
       summary: Получение тарифа по ID
       tags:
       - tariffs
+  /users:
+    get:
+      description: Получение списка пользователей (может только админ)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список пользователей успешно показан
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "404":
+          description: Список пользователей пуст
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Получение списка пользователей
+      tags:
+      - users
 swagger: "2.0"

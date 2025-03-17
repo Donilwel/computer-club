@@ -14,6 +14,7 @@ type UserHandler interface {
 	RegisterUser(w http.ResponseWriter, r *http.Request)
 	LoginUser(w http.ResponseWriter, r *http.Request)
 	InfoUser(w http.ResponseWriter, r *http.Request)
+	GetUsers(w http.ResponseWriter, r *http.Request)
 }
 
 type userHandler struct {
@@ -27,9 +28,9 @@ func NewUserHandler(userService usecase.UserService, walletService usecase.Walle
 }
 
 type UserInfoResponse struct {
-	User         *models.User         `json:"user"`
-	Balance      float64              `json:"balance" example:"100.50"`
-	Transactions []models.Transaction `json:"transactions"`
+	User         *models.User          `json:"user"`
+	Balance      float64               `json:"balance" example:"100.50"`
+	Transactions []*models.Transaction `json:"transactions"`
 }
 
 // InfoUser godoc
@@ -71,7 +72,7 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	response := UserInfoResponse{
 		User:         user,
 		Balance:      balance,
-		Transactions: *transactions,
+		Transactions: transactions,
 	}
 
 	h.log.Info(w, http.StatusOK, "Получена информация о пользователе")
@@ -194,6 +195,48 @@ func (h userHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(map[string]string{"token": token}); err != nil {
+		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+	}
+}
+
+// GetUsers godoc
+// @Summary      Получение списка пользователей
+// @Description      Получение списка пользователей (может только админ)
+// @Tags 		users
+// @Produce      json
+// @Success 	 200 {object} []models.User "Список пользователей успешно показан"
+// @Failure		 404 {object} string "Список пользователей пуст"
+// @Failure      500 {object} string "Внутренняя ошибка сервера"
+// @Router 		/users [get]
+func (h userHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	h.log.Info("Запрос на получение списка пользователей")
+
+	role, ok := r.Context().Value("role").(string)
+	if !ok || role != "admin" {
+		h.log.WithError(errors.ErrForbidden).Error("Ошибка при получении списка пользователей: недостаточно прав")
+		middleware.WriteError(w, http.StatusForbidden, errors.ErrForbidden.Error())
+		return
+	}
+
+	users, err := h.userService.GetUsers(ctx)
+	if err != nil {
+		h.log.WithError(err).Error("Ошибка при получении списка пользователей")
+		if err == errors.ErrZeroUsers {
+			middleware.WriteError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrFindUsers.Error())
+		return
+	}
+
+	h.log.WithField("count", len(users)).Info("Список пользователей получены")
+
+	w.Header().Set("Content-Type", "application/json")
+
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(users); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
 	}
