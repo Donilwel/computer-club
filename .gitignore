@@ -55,3 +55,6 @@ docker-compose.logs
 *.sql
 *.sqlite
 pgdata/
+
+*.idea
+*.DS_Store
