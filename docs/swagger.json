@@ -82,7 +82,9 @@
                         }
                     }
                 }
-            },
+            }
+        },
+        "/computers/{id}": {
             "delete": {
                 "security": [
                     {
@@ -765,10 +767,6 @@
                 "email": {
                     "type": "string",
                     "example": "ivan@example.com"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Иван Иванов"
                 },
                 "password": {
                     "type": "string",

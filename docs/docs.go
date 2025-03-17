@@ -88,7 +88,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/computers/{id}": {
             "delete": {
                 "security": [
                     {
@@ -771,10 +773,6 @@ const docTemplate = `{
                 "email": {
                     "type": "string",
                     "example": "ivan@example.com"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Иван Иванов"
                 },
                 "password": {
                     "type": "string",

@@ -90,7 +90,6 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 }
 
 type RegisterUserRequest struct {
-	Name     string `json:"name" example:"Иван Иванов"`
 	Email    string `json:"email" example:"ivan@example.com"`
 	Password string `json:"password" example:"secret123"`
 	Role     string `json:"role" example:"customer"`
@@ -127,7 +126,7 @@ func (h userHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.userService.RegisterUser(ctx, req.Name, req.Email, req.Password, role)
+	user, err := h.userService.RegisterUser(ctx, req.Email, req.Password, role)
 	if err != nil {
 		switch err {
 		case errors.ErrHashedPassword, errors.ErrRegistration:

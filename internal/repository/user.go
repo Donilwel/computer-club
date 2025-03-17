@@ -3,6 +3,7 @@ package repository
 import (
 	"computer-club/internal/repository/models"
 	"computer-club/pkg/errors"
+	"computer-club/pkg/generate"
 	"context"
 	"gorm.io/gorm"
 )
@@ -33,6 +34,9 @@ func (r *PostgresUserRepo) CreateUser(ctx context.Context, tx Transaction, user 
 	if tx != nil {
 		db = tx.DB()
 	}
+
+	user.Name = generate.GenerateUsername(db)
+
 	if err := db.WithContext(ctx).Create(user).Error; err != nil {
 		return errors.ErrCreatedUser
 	}

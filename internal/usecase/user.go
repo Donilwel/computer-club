@@ -10,7 +10,7 @@ import (
 )
 
 type UserService interface {
-	RegisterUser(ctx context.Context, name, email, password string, role models.UserRole) (*models.User, error)
+	RegisterUser(ctx context.Context, email, password string, role models.UserRole) (*models.User, error)
 	LoginUser(ctx context.Context, name string, password string) (string, error)
 	GetInfoUser(ctx context.Context, userID int64) (*models.User, float64, []*models.Transaction, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
@@ -29,11 +29,8 @@ func NewUserUsecase(userRepo repository.UserRepository,
 }
 
 func (u *UserUsecase) RegisterUser(ctx context.Context,
-	name, email, password string, role models.UserRole) (*models.User, error) {
+	email, password string, role models.UserRole) (*models.User, error) {
 	// Проверки на пустые поля
-	if name == "" {
-		return nil, errors.ErrNameEmpty
-	}
 	if email == "" {
 		return nil, errors.ErrEmailEmpty
 	}
@@ -55,12 +52,6 @@ func (u *UserUsecase) RegisterUser(ctx context.Context,
 		return nil, errors.ErrUserAlreadyExists
 	}
 
-	// Проверяем, существует ли пользователь с таким name
-	existingUserByName, _ := u.userRepo.GetUserByName(ctx, name)
-	if existingUserByName != nil {
-		return nil, errors.ErrUsernameTaken
-	}
-
 	// Хешируем пароль
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -68,7 +59,6 @@ func (u *UserUsecase) RegisterUser(ctx context.Context,
 	}
 
 	user := &models.User{
-		Name:     name,
 		Email:    email,
 		Password: string(hashedPassword),
 		Role:     string(role),

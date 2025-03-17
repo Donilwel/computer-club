@@ -81,7 +81,7 @@ func (h computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Reque
 // @Failure		 404 {object} string "Компьютер не найден"
 // @Failure		 409 {object} string "Компьютер занят"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
-// @Router       /computers [delete]
+// @Router       /computers/{id} [delete]
 func (h computerHandler) DeleteComputer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	role, ok := ctx.Value("role").(string)
