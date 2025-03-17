@@ -3,11 +3,13 @@ package usecase
 import (
 	"computer-club/internal/repository"
 	"computer-club/internal/repository/models"
+	"computer-club/pkg/errors"
 	"context"
 )
 
 type ComputerService interface {
 	GetComputersStatus(ctx context.Context) ([]models.Computer, error)
+	DeleteComputer(ctx context.Context, id int) error
 }
 
 type ComputerUsecase struct {
@@ -18,6 +20,18 @@ func NewComputerUsecase(computerRepo repository.ComputerRepository) ComputerServ
 	return &ComputerUsecase{computerRepo: computerRepo}
 }
 
+func (u *ComputerUsecase) DeleteComputer(ctx context.Context, id int) error {
+	computer, err := u.computerRepo.GetComputerByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if computer.Status == models.Busy {
+		return errors.ErrPCBusy
+	}
+
+	return u.computerRepo.DeleteComputer(ctx, computer)
+}
 func (u *ComputerUsecase) GetComputersStatus(ctx context.Context) ([]models.Computer, error) {
 	return u.computerRepo.GetComputers(ctx)
 }

@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/computers/status": {
+        "/computers": {
             "get": {
                 "security": [
                     {
@@ -42,6 +42,59 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Ошибка доступа - недостаточно прав",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаляет компьютер из базы данных (доступно только для администраторов)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "computers"
+                ],
+                "summary": "Удаляет компьютер",
+                "responses": {
+                    "200": {
+                        "description": ": \"Компьютер успешно удален",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный ID компьютера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Ошибка доступа - недостаточно прав",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Компьютер не найден",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "Компьютер занят",
                         "schema": {
                             "type": "string"
                         }
