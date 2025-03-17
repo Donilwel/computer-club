@@ -30,6 +30,7 @@ func RegisterRoutes(
 		//protected.Delete("/tariff/{id}", tariffHandler.DeleteTariff)
 		protected.Get("/sessions/active", sessionHandler.GetActiveSessions)
 		protected.Get("/users", userHandler.GetUsers)
+		protected.Get("/users/{id}", userHandler.GetUserByID)
 		protected.Post("/session/start", sessionHandler.StartSession)
 		protected.Post("/session/end", sessionHandler.EndSession)
 		protected.Put("/pay", walletHandler.PutMoneyOnWallet)
