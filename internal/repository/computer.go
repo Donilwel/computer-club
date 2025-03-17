@@ -8,10 +8,11 @@ import (
 )
 
 type ComputerRepository interface {
-	GetComputers(ctx context.Context) ([]models.Computer, error)
+	GetComputers(ctx context.Context) ([]*models.Computer, error)
 	ChangeComputerStatus(ctx context.Context, tx Transaction, computer *models.Computer, status string) error
 	GetComputerByID(ctx context.Context, id int) (*models.Computer, error)
 	DeleteComputer(ctx context.Context, computer *models.Computer) error
+	AddComputer(ctx context.Context) (*models.Computer, error)
 }
 type PostgresComputerRepo struct {
 	db *gorm.DB
@@ -30,8 +31,8 @@ func NewComputerRepository(db *gorm.DB) ComputerRepository {
 	return &PostgresComputerRepo{db: db}
 }
 
-func (r *PostgresComputerRepo) GetComputers(ctx context.Context) ([]models.Computer, error) {
-	var computers []models.Computer
+func (r *PostgresComputerRepo) GetComputers(ctx context.Context) ([]*models.Computer, error) {
+	var computers []*models.Computer
 	if err := r.db.WithContext(ctx).Find(&computers).Error; err != nil {
 		return nil, errors.ErrFindComputer
 	}
@@ -60,4 +61,16 @@ func (r *PostgresComputerRepo) DeleteComputer(ctx context.Context, computer *mod
 		return errors.ErrDeleteComputer
 	}
 	return nil
+}
+
+func (r *PostgresComputerRepo) AddComputer(ctx context.Context) (*models.Computer, error) {
+	computer := &models.Computer{}
+	if err := r.db.WithContext(ctx).Create(computer).Error; err != nil {
+		return nil, errors.ErrCreateComputer
+	}
+	computer.PCNumber = int(computer.ID)
+	if err := r.db.WithContext(ctx).Save(computer).Error; err != nil {
+		return nil, errors.ErrCreateComputer
+	}
+	return computer, nil
 }

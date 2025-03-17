@@ -236,6 +236,28 @@ paths:
       summary: Получение статуса компьютеров
       tags:
       - computers
+    post:
+      description: Добавляет компьютер в базу данных (доступно только для администраторов)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ': "Компьютер успешно добавлен'
+          schema:
+            type: string
+        "403":
+          description: Ошибка доступа - недостаточно прав
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Добавляет компьютер
+      tags:
+      - computers
   /info:
     get:
       description: Возвращает информацию о пользователе, баланс и транзакции

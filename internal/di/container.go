@@ -75,6 +75,7 @@ func NewContainer() *Container {
 	r := chi.NewRouter()
 	r.Use(middleware.LoggerMiddleware(log))
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
+
 	// Регистрация маршрутов
 	httpService.RegisterRoutes(r, userHandler, tariffHandler, sessionHandler, walletHandler, computerHandler)
 

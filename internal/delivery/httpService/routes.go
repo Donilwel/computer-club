@@ -35,6 +35,7 @@ func RegisterRoutes(
 		protected.Post("/session/end", sessionHandler.EndSession)
 		protected.Put("/pay", walletHandler.PutMoneyOnWallet)
 		protected.Get("/computers", computerHandler.GetComputersStatus)
+		protected.Post("/computers", computerHandler.AddComputer)
 		protected.Delete("/computers/{id}", computerHandler.DeleteComputer)
 	})
 }

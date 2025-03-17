@@ -48,6 +48,7 @@ var (
 	ErrComputerAlreadyFree  = errors.New("статус компьютера уже свободный")
 	ErrWrongComputerStatus  = errors.New("ошибка: неверный статус компьютера")
 	ErrDeleteComputer       = errors.New("ошибка при удалении компьютера из базы данных")
+	ErrCreateComputer       = errors.New("ошибка при добавлении компьютера")
 
 	// Ошибки тарифов
 	ErrFindTariffByID  = errors.New("ошибка при поиске тарифа в базе данных по id")

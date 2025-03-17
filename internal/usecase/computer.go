@@ -8,8 +8,9 @@ import (
 )
 
 type ComputerService interface {
-	GetComputersStatus(ctx context.Context) ([]models.Computer, error)
+	GetComputersStatus(ctx context.Context) ([]*models.Computer, error)
 	DeleteComputer(ctx context.Context, id int) error
+	AddComputer(ctx context.Context) (*models.Computer, error)
 }
 
 type ComputerUsecase struct {
@@ -32,6 +33,10 @@ func (u *ComputerUsecase) DeleteComputer(ctx context.Context, id int) error {
 
 	return u.computerRepo.DeleteComputer(ctx, computer)
 }
-func (u *ComputerUsecase) GetComputersStatus(ctx context.Context) ([]models.Computer, error) {
+func (u *ComputerUsecase) GetComputersStatus(ctx context.Context) ([]*models.Computer, error) {
 	return u.computerRepo.GetComputers(ctx)
+}
+
+func (u *ComputerUsecase) AddComputer(ctx context.Context) (*models.Computer, error) {
+	return u.computerRepo.AddComputer(ctx)
 }

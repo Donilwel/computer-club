@@ -14,6 +14,7 @@ import (
 
 type ComputerHandler interface {
 	GetComputersStatus(w http.ResponseWriter, r *http.Request)
+	AddComputer(w http.ResponseWriter, r *http.Request)
 	DeleteComputer(w http.ResponseWriter, r *http.Request)
 }
 
@@ -114,9 +115,45 @@ func (h computerHandler) DeleteComputer(w http.ResponseWriter, r *http.Request) 
 		h.log.WithError(err).Error("Ошибка удаления компьютера")
 		return
 	}
+	h.log.Info("Компьютер удален успешно")
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Компьютер успешно удален"}); err != nil {
+		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+	}
+}
+
+// AddComputer godoc
+// @Summary      Добавляет компьютер
+// @Description  Добавляет компьютер в базу данных (доступно только для администраторов)
+// @Tags         computers
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  string message": "Компьютер успешно добавлен
+// @Failure      403 {object} string "Ошибка доступа - недостаточно прав"
+// @Failure      500 {object} string "Внутренняя ошибка сервера"
+// @Router       /computers [post]
+func (h computerHandler) AddComputer(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	h.log.Info("Добавление компьютера")
+	role, ok := ctx.Value("role").(string)
+	if !ok || role != string(models.Admin) {
+		h.log.WithError(errors.ErrForbidden).Error("Ошибка при добавлении компьютера: недостаточно прав")
+		middleware.WriteError(w, http.StatusForbidden, errors.ErrForbidden.Error())
+		return
+	}
+
+	computer, err := h.computerService.AddComputer(ctx)
+	if err != nil {
+		h.log.WithError(errors.ErrForbidden).Error("Ошибка при добавлении компьютера")
+		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCreateComputer.Error())
+		return
+	}
+	h.log.Info("Компьютер добавлен успешно")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(computer); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
 	}
