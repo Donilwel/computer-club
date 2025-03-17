@@ -204,77 +204,76 @@ computer-club
 ## Описание
 В проекте используются предопределённые ошибки для обработки различных ситуаций. Они сгруппированы по категориям для удобства использования и поддержки.
 
-## Категории ошибок
-
-### 1. Ошибки аутентификации и авторизации
-- `ErrUserNotFound` — пользователь не найден
-- `ErrForbidden` — ошибка доступа, необходима роль администратора
-- `ErrWrongIDFromJWT` — неправильный `user_id` в токене
-- `ErrWrongRoleFromJWT` — неправильная роль в токене
-- `ErrInvalidRole` — некорректная роль
-- `ErrUserAlreadyExists` — пользователь уже существует
-- `ErrInvalidCredentials` — неверный email или пароль
-- `ErrUsernameTaken` — пользователь с таким никнеймом уже существует
-- `ErrMissingToken` — токен не найден в заголовке
-- `ErrWrongToken` — токен неверный
-- `ErrTokenGeneration` — ошибка генерации токена
-
-### 2. Ошибки при работе с пользователем
-- `ErrHashedPassword` — проблема с хешированием пароля
-- `ErrPasswordTooShort` — пароль должен содержать минимум 6 символов
-- `ErrCreatedUser` — ошибка при создании пользователя в базе данных
-- `ErrFindUser` — ошибка при поиске пользователя в базе данных
-- `ErrNameEmpty` — имя не может быть пустым
-- `ErrPasswordEmpty` — пароль не может быть пустым
-- `ErrEmailEmpty` — почта не может быть пустой
-- `ErrRegistration` — ошибка при регистрации пользователя
-
-### 3. Ошибки сессий
-- `ErrSessionNotFound` — сессия не найдена
-- `ErrSessionActive` — у пользователя уже есть активная сессия
-- `ErrInvalidSessionID` — некорректный идентификатор сессии
-- `ErrCreatedSession` — ошибка при создании сессии в базе данных
-- `ErrUpdateSession` — ошибка обновления сессии в базе данных
-- `ErrSessionAlreadyFinished` — статус сессии уже завершен
-- `ErrStatusSessionAlreadyFinished` — запрашиваемая сессия уже закончена
-- `ErrFailedStatus` — статус запрашиваемой сессии неверный
-- `ErrCacheSession` — ошибка добавления в кэш
-
-### 4. Ошибки компьютеров
-- `ErrUpdateComputer` — ошибка обновления компьютера в базе данных
-- `ErrFindComputer` — ошибка при поиске компьютера в базе данных
-- `ErrComputerNotFound` — компьютер не найден
-- `ErrPCBusy` — компьютер уже занят
-- `ErrUpdateComputerStatus` — ошибка при обновлении статуса компьютера
-
-### 5. Ошибки тарифов
-- `ErrFindTariffByID` — ошибка при поиске тарифа в базе данных по ID
-- `ErrInvalidTariffID` — ошибка чтения ID тарифа
-- `ErrTariffNotFound` — тариф не найден
-- `ErrFindTariffs` — ошибка при поиске тарифов в базе данных
-
-### 6. Ошибки транзакций и кошелька
-- `ErrInvalidAmount` — количество денег должно быть больше нуля
-- `ErrInsufficientFunds` — баланс меньше, чем сумма, которую хотят вывести
-- `ErrToDeposit` — ошибка при обновлении суммы в кошельке
-- `ErrCheckBalance` — ошибка при проверке баланса, кошелек не найден
-- `ErrCheckTransaction` — ошибка при просмотре транзакций в базе данных
-- `ErrWithdraw` — ошибка при выводе средств
-- `ErrWalletAlreadyExists` — ошибка при создании кошелька: он уже существует
-- `ErrCreateWallet` — ошибка при создании кошелька в базе данных
-- `ErrInvalidUserID` — ошибка чтения ID пользователя
-- `ErrCreateTransaction` — ошибка создания модели транзакции
-
-### 7. Ошибки базы данных
-- `ErrCommitData` — ошибка при сохранении изменений в базе данных
-- `ErrStartTransaction` — ошибка при создании транзакции
-
-### 8. Ошибки кэша и Redis
-- `ErrDeleteRedis` — ошибка удаления данных из Redis
-
-### 9. Общие ошибки
-- `ErrJSONRequest` — ошибка JSON запроса
-- `ErrUnexpected` — неизвестная ошибка
+### Ошибки аутентификации и авторизации
+  - ErrUserNotFound: Пользователь не найден.
+  - ErrForbidden: Ошибка доступа, необходима роль администратора.
+  - ErrWrongIDFromJWT: Неправильный user_id в токене.
+  - ErrWrongRoleFromJWT: Неправильная роль в токене.
+  - ErrInvalidRole: Некорректная роль.
+  - ErrUserAlreadyExists: Пользователь уже существует.
+  - ErrInvalidCredentials: Неверный email или пароль.
+  - ErrUsernameTaken: Пользователь с таким никнеймом уже существует.
+  - ErrMissingToken: Токен не найден в заголовке.
+  - ErrWrongToken: Токен неверный.
+  - ErrTokenGeneration: Ошибка генерации токена.
+### Ошибки при работе с пользователем
+  - ErrHashedPassword: Проблема с хешированием пароля.
+  - ErrPasswordTooShort: Пароль должен содержать минимум 6 символов.
+  - ErrCreatedUser: Ошибка при создании пользователя в базе данных.
+  - ErrFindUser: Ошибка при поиске пользователя в базе данных.
+  - ErrNameEmpty: Имя не может быть пустым.
+  - ErrPasswordEmpty: Пароль не может быть пустым.
+  - ErrEmailEmpty: Почта не может быть пустой.
+  - ErrRegistration: Ошибка при регистрации пользователя.
+  - ErrFindUsers: Ошибка при поиске пользователей в базе данных.
+  - ErrZeroUsers: Ошибка, нет пользователей в базе данных. 
+### Ошибки сессий
+  - ErrSessionNotFound: Сессия не найдена.
+  - ErrSessionActive: У пользователя уже есть активная сессия.
+  - ErrInvalidSessionID: Некорректный идентификатор сессии.
+  - ErrCreatedSession: Ошибка при создании сессии в базе данных.
+  - ErrUpdateSession: Ошибка обновления сессии в базе данных.
+  - ErrSessionAlreadyFinished: Статус сессии уже завершен.
+  - ErrStatusSessionAlreadyFinished: Запрашиваемая сессия уже закончена. 
+  - ErrFailedStatus: Статус запрашиваемой сессии неверный.
+  - ErrCacheSession: Ошибка добавления в кэш.
+### Ошибки компьютеров
+  - ErrUpdateComputer: Ошибка обновления компьютера в базе данных.
+  - ErrFindComputer: Ошибка при поиске компьютера в базе данных.
+  - ErrComputerNotFound: Компьютер не найден.
+  - ErrPCBusy: Компьютер уже занят.
+  - ErrUpdateComputerStatus: Ошибка при обновлении статуса компьютера.
+  - ErrComputerAlreadyFree: Статус компьютера уже свободный.
+  - ErrWrongComputerStatus: Ошибка: неверный статус компьютера.
+  - ErrDeleteComputer: Ошибка при удалении компьютера из базы данных.
+  - ErrCreateComputer: Ошибка при добавлении компьютера. 
+### Ошибки тарифов
+  - ErrFindTariffByID: Ошибка при поиске тарифа в базе данных по ID.
+  - ErrInvalidTariffID: Ошибка чтения ID тарифа.
+  - ErrTariffNotFound: Тариф не найден.
+  - ErrFindTariffs: Ошибка при поиске тарифов в базе данных.
+  - ErrTariffsNotFound: Тарифы не найдены. 
+### Ошибки транзакций и кошелька
+  - ErrInvalidAmount: Количество денег должно быть больше нуля.
+  - ErrInsufficientFunds: Баланс меньше, чем сумма, которую хотят вывести.
+  - ErrToDeposit: Ошибка при обновлении суммы в кошельке.
+  - ErrCheckBalance: Ошибка при проверке баланса, кошелек не найден.
+  - ErrCheckTransaction: Ошибка при просмотре транзакций в базе данных.
+  - ErrWithdraw: Ошибка при выводе средств.
+  - ErrWalletAlreadyExists: Ошибка при создании кошелька: он уже существует.
+  - ErrCreateWallet: Ошибка при создании кошелька в базе данных.
+  - ErrInvalidUserID: Ошибка чтения ID пользователя.
+  - ErrCreateTransaction: Ошибка создания модели транзакции.
+  - ErrorTypeTransaction: Ошибка типа транзакции.
+### Ошибки базы данных
+  - ErrCommitData: Ошибка при сохранении изменений в базе данных.
+  - ErrStartTransaction: Ошибка при создании транзакции.
+### Ошибки кэша и Redis
+  - ErrDeleteCashedData: Ошибка удаления данных из Redis.
+### Общие ошибки
+  - ErrJSONRequest: Ошибка JSON запроса.
+  - ErrUnexpected: Неизвестная ошибка.
+  - ErrCodingaData: Ошибка обработки данных.
 
 ## Использование ошибок
 
