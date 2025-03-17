@@ -12,9 +12,10 @@ import (
 type UserService interface {
 	RegisterUser(ctx context.Context, name, email, password string, role models.UserRole) (*models.User, error)
 	LoginUser(ctx context.Context, name string, password string) (string, error)
-	GetInfoUser(ctx context.Context, userID int64) (*models.User, float64, *[]models.Transaction, error)
+	GetInfoUser(ctx context.Context, userID int64) (*models.User, float64, []*models.Transaction, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByID(ctx context.Context, id int64) (*models.User, error)
+	GetUsers(ctx context.Context) ([]*models.User, error)
 }
 
 type UserUsecase struct {
@@ -97,6 +98,10 @@ func (u *UserUsecase) RegisterUser(ctx context.Context,
 
 }
 
+func (u *UserUsecase) GetUsers(ctx context.Context) ([]*models.User, error) {
+	return u.userRepo.GetUsers(ctx)
+}
+
 func (u *UserUsecase) LoginUser(ctx context.Context, email string, password string) (string, error) {
 	user, err := u.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
@@ -115,7 +120,7 @@ func (u *UserUsecase) LoginUser(ctx context.Context, email string, password stri
 	return token, nil
 }
 
-func (u *UserUsecase) GetInfoUser(ctx context.Context, userID int64) (*models.User, float64, *[]models.Transaction, error) {
+func (u *UserUsecase) GetInfoUser(ctx context.Context, userID int64) (*models.User, float64, []*models.Transaction, error) {
 	user, err := u.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return nil, 0.0, nil, err
@@ -130,7 +135,7 @@ func (u *UserUsecase) GetInfoUser(ctx context.Context, userID int64) (*models.Us
 	if err != nil {
 		return nil, 0.0, nil, err
 	}
-	return user, balance, &transactions, nil
+	return user, balance, transactions, nil
 }
 
 func (u *UserUsecase) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {

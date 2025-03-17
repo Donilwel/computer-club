@@ -14,6 +14,9 @@ import (
 type TariffHandler interface {
 	GetTariff(w http.ResponseWriter, r *http.Request)
 	GetTariffByID(w http.ResponseWriter, r *http.Request)
+	ChangeTariff(w http.ResponseWriter, r *http.Request)
+	AddTariff(w http.ResponseWriter, r *http.Request)
+	DeleteTariff(w http.ResponseWriter, r *http.Request)
 }
 
 type tariffHandler struct {
@@ -92,3 +95,11 @@ func (h tariffHandler) GetTariffByID(w http.ResponseWriter, r *http.Request) {
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
 	}
 }
+
+func (h tariffHandler) ChangeTariff(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (h tariffHandler) AddTariff(w http.ResponseWriter, r *http.Request) {}
+
+func (h tariffHandler) DeleteTariff(w http.ResponseWriter, r *http.Request) {}

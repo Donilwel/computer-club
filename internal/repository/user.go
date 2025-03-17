@@ -9,6 +9,7 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, tx Transaction, user *models.User) error
+	GetUsers(ctx context.Context) ([]*models.User, error)
 	GetUserByID(ctx context.Context, id int64) (*models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByName(ctx context.Context, name string) (*models.User, error)
@@ -37,6 +38,19 @@ func (r *PostgresUserRepo) CreateUser(ctx context.Context, tx Transaction, user 
 	}
 
 	return nil
+}
+
+func (r *PostgresUserRepo) GetUsers(ctx context.Context) ([]*models.User, error) {
+	var users []*models.User
+
+	if err := r.db.WithContext(ctx).Find(&users).Error; err != nil {
+		return nil, errors.ErrFindUsers
+	}
+
+	if len(users) == 0 {
+		return nil, errors.ErrZeroUsers
+	}
+	return users, nil
 }
 
 func (r *PostgresUserRepo) GetUserByID(ctx context.Context, id int64) (*models.User, error) {

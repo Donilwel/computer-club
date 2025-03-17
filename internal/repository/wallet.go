@@ -9,7 +9,7 @@ import (
 
 type WalletRepository interface {
 	GetBalance(ctx context.Context, userID int64) (float64, error)
-	GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error)
+	GetTransactions(ctx context.Context, userID int64) ([]*models2.Transaction, error)
 	CreateWallet(ctx context.Context, tx Transaction, wallet *models2.Wallet) error
 	Deposit(ctx context.Context, tx Transaction, userID int64, amount float64) error
 	Withdraw(ctx context.Context, tx Transaction, userID int64, amount float64) error
@@ -92,8 +92,8 @@ func (r *PostgresWalletRepo) GetBalance(ctx context.Context, userID int64) (floa
 	return wallet.Balance, nil
 }
 
-func (r *PostgresWalletRepo) GetTransactions(ctx context.Context, userID int64) ([]models2.Transaction, error) {
-	var transactions []models2.Transaction
+func (r *PostgresWalletRepo) GetTransactions(ctx context.Context, userID int64) ([]*models2.Transaction, error) {
+	var transactions []*models2.Transaction
 	err := r.db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Order("created_at DESC").

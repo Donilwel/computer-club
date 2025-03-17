@@ -25,6 +25,8 @@ var (
 	ErrPasswordEmpty    = errors.New("пароль не может быть пустым")
 	ErrEmailEmpty       = errors.New("почта не может быть пустая")
 	ErrRegistration     = errors.New("ошибка при регистрации пользователя")
+	ErrFindUsers        = errors.New("ошибка при поиске пользователей в базе данных")
+	ErrZeroUsers        = errors.New("ошибка нет пользователей в базе данных")
 
 	// Ошибки сессий
 	ErrSessionNotFound              = errors.New("сессия не найдена")

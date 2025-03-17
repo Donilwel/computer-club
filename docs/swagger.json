@@ -506,6 +506,41 @@
                     }
                 }
             }
+        },
+        "/users": {
+            "get": {
+                "description": "Получение списка пользователей (может только админ)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Получение списка пользователей",
+                "responses": {
+                    "200": {
+                        "description": "Список пользователей успешно показан",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.User"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Список пользователей пуст",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {

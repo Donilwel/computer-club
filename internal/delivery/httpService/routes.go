@@ -25,7 +25,11 @@ func RegisterRoutes(
 		protected.Use(middleware.AuthMiddleware)
 
 		protected.Get("/info", userHandler.InfoUser)
+		//protected.Post("/tariff", tariffHandler.AddTariff)
+		//protected.Put("/tariff/{id}", tariffHandler.ChangeTariff)
+		//protected.Delete("/tariff/{id}", tariffHandler.DeleteTariff)
 		protected.Get("/sessions/active", sessionHandler.GetActiveSessions)
+		protected.Get("/users", userHandler.GetUsers)
 		protected.Post("/session/start", sessionHandler.StartSession)
 		protected.Post("/session/end", sessionHandler.EndSession)
 		protected.Put("/pay", walletHandler.PutMoneyOnWallet)
