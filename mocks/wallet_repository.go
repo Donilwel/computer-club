@@ -131,23 +131,23 @@ func (_m *WalletRepository) GetBalance(ctx context.Context, userID int64) (float
 }
 
 // GetTransactions provides a mock function with given fields: ctx, userID
-func (_m *WalletRepository) GetTransactions(ctx context.Context, userID int64) ([]models.Transaction, error) {
+func (_m *WalletRepository) GetTransactions(ctx context.Context, userID int64) ([]*models.Transaction, error) {
 	ret := _m.Called(ctx, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTransactions")
 	}
 
-	var r0 []models.Transaction
+	var r0 []*models.Transaction
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64) ([]models.Transaction, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int64) ([]*models.Transaction, error)); ok {
 		return rf(ctx, userID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int64) []models.Transaction); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int64) []*models.Transaction); ok {
 		r0 = rf(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]models.Transaction)
+			r0 = ret.Get(0).([]*models.Transaction)
 		}
 	}
 

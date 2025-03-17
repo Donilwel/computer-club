@@ -212,21 +212,21 @@ func TestGetTransactions(t *testing.T) {
 		userID        int64
 		mockSetup     func(*mocks.UserRepository, *mocks.WalletRepository, int64)
 		expectedError error
-		expectedData  []models.Transaction
+		expectedData  []*models.Transaction
 	}{
 		{
 			name:   "Success",
 			userID: 42,
 			mockSetup: func(userRepo *mocks.UserRepository, walletRepo *mocks.WalletRepository, userID int64) {
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(&models.User{ID: userID}, nil)
-				transactions := []models.Transaction{
+				transactions := []*models.Transaction{
 					{ID: 1, UserID: userID, Amount: 100.00, TariffID: -1, Type: models.Buy},
 					{ID: 2, UserID: userID, Amount: 50.00, TariffID: -1, Type: models.Add},
 				}
 				walletRepo.On("GetTransactions", mock.Anything, userID).Return(transactions, nil)
 			},
 			expectedError: nil,
-			expectedData: []models.Transaction{
+			expectedData: []*models.Transaction{
 				{ID: 1, UserID: 42, Amount: 100.00, TariffID: -1, Type: models.Buy},
 				{ID: 2, UserID: 42, Amount: 50.00, TariffID: -1, Type: models.Add},
 			},

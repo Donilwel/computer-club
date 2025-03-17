@@ -290,7 +290,7 @@ func TestGetInfoUser(t *testing.T) {
 		expectedError        error
 		expectedUser         *models.User
 		expectedBalance      float64
-		expectedTransactions *[]models.Transaction
+		expectedTransactions []*models.Transaction
 	}{
 		{
 			name: "Success",
@@ -298,7 +298,7 @@ func TestGetInfoUser(t *testing.T) {
 				userID := int64(1)
 				user := &models.User{ID: userID, Name: "Alice", Email: "alice@example.com"}
 				balance := 500.0
-				transactions := []models.Transaction{
+				transactions := []*models.Transaction{
 					{ID: 1, UserID: userID, Amount: 200, Type: models.Buy},
 					{ID: 2, UserID: userID, Amount: 300, Type: models.Add},
 				}
@@ -310,7 +310,7 @@ func TestGetInfoUser(t *testing.T) {
 			expectedError:   nil,
 			expectedUser:    &models.User{ID: 1, Name: "Alice", Email: "alice@example.com"},
 			expectedBalance: 500.0,
-			expectedTransactions: &[]models.Transaction{
+			expectedTransactions: []*models.Transaction{
 				{ID: 1, UserID: 1, Amount: 200, Type: models.Buy},
 				{ID: 2, UserID: 1, Amount: 300, Type: models.Add},
 			},
@@ -343,7 +343,7 @@ func TestGetInfoUser(t *testing.T) {
 
 				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(balance, nil)
-				walletRepo.On("GetTransactions", mock.Anything, userID).Return([]models.Transaction{}, errors.ErrCheckTransaction)
+				walletRepo.On("GetTransactions", mock.Anything, userID).Return([]*models.Transaction{}, errors.ErrCheckTransaction)
 			},
 			expectedError: errors.ErrCheckTransaction,
 		},
@@ -466,6 +466,62 @@ func TestGetUserByID(t *testing.T) {
 
 			assert.ErrorIs(t, err, tt.expectedError)
 			assert.Equal(t, tt.expectedUser, user)
+		})
+	}
+}
+
+func TestGetUsers(t *testing.T) {
+	tests := []struct {
+		name          string
+		mockSetup     func(*mocks.UserRepository)
+		expectedUsers []*models.User
+		expectedError error
+	}{
+		{
+			name: "Success",
+			mockSetup: func(userRepo *mocks.UserRepository) {
+				users := []*models.User{
+					{ID: 1, Name: "John Doe", Role: "admin", Email: "john@example.com"},
+					{ID: 2, Name: "Jane Doe", Role: "customer", Email: "jane@example.com"},
+				}
+				userRepo.On("GetUsers", mock.Anything).Return(users, nil)
+			},
+			expectedUsers: []*models.User{
+				{ID: 1, Name: "John Doe", Role: "admin", Email: "john@example.com"},
+				{ID: 2, Name: "Jane Doe", Role: "customer", Email: "jane@example.com"},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Database Error",
+			mockSetup: func(userRepo *mocks.UserRepository) {
+				userRepo.On("GetUsers", mock.Anything).Return(nil, errors.ErrFindUsers)
+			},
+			expectedUsers: nil,
+			expectedError: errors.ErrFindUsers,
+		},
+		{
+			name: "No Users Found",
+			mockSetup: func(userRepo *mocks.UserRepository) {
+				userRepo.On("GetUsers", mock.Anything).Return(nil, errors.ErrZeroUsers)
+			},
+			expectedUsers: nil,
+			expectedError: errors.ErrZeroUsers,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			mockUserRepo := new(mocks.UserRepository)
+			mockWalletRepo := new(mocks.WalletRepository)
+			tt.mockSetup(mockUserRepo)
+
+			userUsecase := usecase.NewUserUsecase(mockUserRepo, mockWalletRepo)
+			users, err := userUsecase.GetUsers(ctx)
+
+			assert.ErrorIs(t, err, tt.expectedError)
+			assert.Equal(t, tt.expectedUsers, users)
 		})
 	}
 }

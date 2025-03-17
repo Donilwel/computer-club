@@ -40,7 +40,7 @@ func TestStartSession(t *testing.T) {
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
 				walletRepo.On("CreateTransaction", mock.Anything, tx, userID, tariff.Price, mock.Anything, tariff).Return(nil, nil)
-				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return(session, nil)
+				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariff).Return(session, nil)
 				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Busy)).Return(nil)
 				sessionRepo.On("CacheSession", mock.Anything, session).Return(nil)
 			},
@@ -236,7 +236,7 @@ func TestStartSession(t *testing.T) {
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
 				walletRepo.On("CreateTransaction", mock.Anything, tx, userID, tariff.Price, mock.Anything, tariff).Return(nil, nil)
-				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return(nil, errors.ErrCreatedSession)
+				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariff).Return(nil, errors.ErrCreatedSession)
 			},
 			expectedError: errors.ErrCreatedSession,
 		},
@@ -262,7 +262,7 @@ func TestStartSession(t *testing.T) {
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
 				walletRepo.On("CreateTransaction", mock.Anything, tx, userID, tariff.Price, mock.Anything, tariff).Return(nil, nil)
-				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return(session, nil)
+				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariff).Return(session, nil)
 				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Busy)).Return(errors.ErrUpdateComputerStatus)
 			},
 			expectedError: errors.ErrUpdateComputerStatus,
@@ -289,7 +289,7 @@ func TestStartSession(t *testing.T) {
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
 				walletRepo.On("CreateTransaction", mock.Anything, tx, userID, tariff.Price, mock.Anything, tariff).Return(nil, nil)
-				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return(session, nil)
+				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariff).Return(session, nil)
 				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Busy)).Return(nil)
 				sessionRepo.On("CacheSession", mock.Anything, session).Return(nil)
 			},
@@ -317,7 +317,7 @@ func TestStartSession(t *testing.T) {
 				walletRepo.On("GetBalance", mock.Anything, userID).Return(float64(200), nil)
 				walletRepo.On("Withdraw", mock.Anything, tx, userID, tariff.Price).Return(nil)
 				walletRepo.On("CreateTransaction", mock.Anything, tx, userID, tariff.Price, mock.Anything, tariff).Return(nil, nil)
-				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariffID).Return(session, nil)
+				sessionRepo.On("CreateSession", mock.Anything, tx, userID, pcNumber, tariff).Return(session, nil)
 				computerRepo.On("ChangeComputerStatus", mock.Anything, tx, computer, string(models.Busy)).Return(nil)
 				sessionRepo.On("CacheSession", mock.Anything, session).Return(errors.ErrCacheSession)
 			},

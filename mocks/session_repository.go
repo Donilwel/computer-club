@@ -72,9 +72,9 @@ func (_m *SessionRepository) CheckStatus(session models.Session, status string) 
 	return r0
 }
 
-// CreateSession provides a mock function with given fields: ctx, tx, userID, pcNumber, tariffID
-func (_m *SessionRepository) CreateSession(ctx context.Context, tx repository.Transaction, userID int64, pcNumber int, tariffID int64) (*models.Session, error) {
-	ret := _m.Called(ctx, tx, userID, pcNumber, tariffID)
+// CreateSession provides a mock function with given fields: ctx, tx, userID, pcNumber, tariff
+func (_m *SessionRepository) CreateSession(ctx context.Context, tx repository.Transaction, userID int64, pcNumber int, tariff *models.Tariff) (*models.Session, error) {
+	ret := _m.Called(ctx, tx, userID, pcNumber, tariff)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateSession")
@@ -82,19 +82,19 @@ func (_m *SessionRepository) CreateSession(ctx context.Context, tx repository.Tr
 
 	var r0 *models.Session
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, repository.Transaction, int64, int, int64) (*models.Session, error)); ok {
-		return rf(ctx, tx, userID, pcNumber, tariffID)
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Transaction, int64, int, *models.Tariff) (*models.Session, error)); ok {
+		return rf(ctx, tx, userID, pcNumber, tariff)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, repository.Transaction, int64, int, int64) *models.Session); ok {
-		r0 = rf(ctx, tx, userID, pcNumber, tariffID)
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Transaction, int64, int, *models.Tariff) *models.Session); ok {
+		r0 = rf(ctx, tx, userID, pcNumber, tariff)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*models.Session)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, repository.Transaction, int64, int, int64) error); ok {
-		r1 = rf(ctx, tx, userID, pcNumber, tariffID)
+	if rf, ok := ret.Get(1).(func(context.Context, repository.Transaction, int64, int, *models.Tariff) error); ok {
+		r1 = rf(ctx, tx, userID, pcNumber, tariff)
 	} else {
 		r1 = ret.Error(1)
 	}
