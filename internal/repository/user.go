@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"computer-club/internal/repository/models"
+	"computer-club/internal/models"
 	"computer-club/pkg/errors"
 	"computer-club/pkg/generate"
 	"context"

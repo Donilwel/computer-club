@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	models "computer-club/internal/repository/models"
+	models "computer-club/internal/models"
 	context "context"
 
 	mock "github.com/stretchr/testify/mock"

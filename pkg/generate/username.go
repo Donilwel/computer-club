@@ -1,7 +1,7 @@
 package generate
 
 import (
-	"computer-club/internal/repository/models"
+	"computer-club/internal/models"
 	"fmt"
 	"gorm.io/gorm"
 	"math/rand"
