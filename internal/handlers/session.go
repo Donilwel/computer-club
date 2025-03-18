@@ -176,7 +176,7 @@ type ActiveSessionResponse struct {
 // @Success      200 {array} ActiveSessionResponse
 // @Failure      403 {object} string "ошибка доступа к текущему запросу. необходима роль пользователя: админ"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
-// @Router       /sessions/active [get]
+// @Router       /session/active [get]
 func (h sessionHandler) GetActiveSessions(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение активных сессий")
