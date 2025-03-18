@@ -1,7 +1,7 @@
 package JWT_test
 
 import (
-	"computer-club/internal/repository/models"
+	"computer-club/internal/models"
 	"computer-club/pkg/JWT"
 	"github.com/stretchr/testify/assert"
 	"os"

@@ -1,17 +1,17 @@
 package usecase
 
 import (
+	"computer-club/internal/models"
 	"computer-club/internal/repository"
-	models2 "computer-club/internal/repository/models"
 	"computer-club/pkg/errors"
 	"context"
 )
 
 type WalletService interface {
-	PutMoneyOnWallet(ctx context.Context, userID int64, amount float64) (*models2.Transaction, error)
+	PutMoneyOnWallet(ctx context.Context, userID int64, amount float64) (*models.Transaction, error)
 	Withdraw(ctx context.Context, userID int64, amount float64) error
 	GetBalance(ctx context.Context, userID int64) (float64, error)
-	GetTransactions(ctx context.Context, userID int64) ([]*models2.Transaction, error)
+	GetTransactions(ctx context.Context, userID int64) ([]*models.Transaction, error)
 }
 
 type WalletUsecase struct {
@@ -28,7 +28,7 @@ func NewWalletUsecase(walletRepo repository.WalletRepository,
 		userRepo:   userRepo}
 }
 
-func (u *WalletUsecase) PutMoneyOnWallet(ctx context.Context, userID int64, amount float64) (*models2.Transaction, error) {
+func (u *WalletUsecase) PutMoneyOnWallet(ctx context.Context, userID int64, amount float64) (*models.Transaction, error) {
 	if amount <= 0 {
 		return nil, errors.ErrInvalidAmount
 	}
@@ -47,7 +47,7 @@ func (u *WalletUsecase) PutMoneyOnWallet(ctx context.Context, userID int64, amou
 		return nil, err
 	}
 
-	transaction, err := u.walletRepo.CreateTransaction(ctx, tx, userID, amount, string(models2.Add), nil)
+	transaction, err := u.walletRepo.CreateTransaction(ctx, tx, userID, amount, string(models.Add), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (u *WalletUsecase) GetBalance(ctx context.Context, userID int64) (float64, 
 	return u.walletRepo.GetBalance(ctx, userID)
 }
 
-func (u *WalletUsecase) GetTransactions(ctx context.Context, userID int64) ([]*models2.Transaction, error) {
+func (u *WalletUsecase) GetTransactions(ctx context.Context, userID int64) ([]*models.Transaction, error) {
 	if _, err := u.userRepo.GetUserByID(ctx, userID); err != nil {
 		return nil, err
 	}

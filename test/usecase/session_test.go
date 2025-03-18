@@ -1,7 +1,7 @@
 package usecase_test
 
 import (
-	"computer-club/internal/repository/models"
+	"computer-club/internal/models"
 	"computer-club/internal/usecase"
 	"computer-club/mocks"
 	"computer-club/pkg/errors"

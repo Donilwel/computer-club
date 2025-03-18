@@ -173,6 +173,75 @@ info:
   title: API Computer-club
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет email и пароль, возвращает JWT-токен
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный вход
+          schema:
+            $ref: '#/definitions/handlers.LoginResponse'
+        "400":
+          description: Некорректный запрос (невалидный JSON)
+          schema:
+            type: string
+        "401":
+          description: Ошибка авторизации - неверный email или пароль
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Авторизация пользователя
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создает нового пользователя с указанными данными
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь успешно зарегистрирован
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Некорректные данные (пустое имя, email, короткий пароль, неверная
+            роль)
+          schema:
+            type: string
+        "409":
+          description: Пользователь уже существует
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Регистрация пользователя
+      tags:
+      - auth
   /computers:
     get:
       description: Возвращает список всех компьютеров и их статусы (доступно только
@@ -256,67 +325,6 @@ paths:
       summary: Удаляет компьютер
       tags:
       - computers
-  /info:
-    get:
-      description: Возвращает информацию о пользователе, баланс и транзакции
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.UserInfoResponse'
-        "400":
-          description: Некорректный user_id
-          schema:
-            type: string
-        "401":
-          description: Кошелек не найден или пользователь
-          schema:
-            type: string
-        "500":
-          description: Внутренняя ошибка сервера
-          schema:
-            type: string
-      security:
-      - BearerAuth: []
-      summary: Получение информации о пользователе
-      tags:
-      - users
-  /login:
-    post:
-      consumes:
-      - application/json
-      description: Проверяет email и пароль, возвращает JWT-токен
-      parameters:
-      - description: Данные для входа
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.LoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Успешный вход
-          schema:
-            $ref: '#/definitions/handlers.LoginResponse'
-        "400":
-          description: Некорректный запрос (невалидный JSON)
-          schema:
-            type: string
-        "401":
-          description: Ошибка авторизации - неверный email или пароль
-          schema:
-            type: string
-        "500":
-          description: Внутренняя ошибка сервера
-          schema:
-            type: string
-      summary: Авторизация пользователя
-      tags:
-      - users
   /pay:
     put:
       consumes:
@@ -357,41 +365,32 @@ paths:
       summary: Пополнение счета игрока
       tags:
       - wallet
-  /register:
-    post:
-      consumes:
-      - application/json
-      description: Создает нового пользователя с указанными данными
-      parameters:
-      - description: Данные для регистрации
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.RegisterUserRequest'
+  /session/active:
+    get:
+      description: Возвращает список всех активных сессий (только для администраторов)
       produces:
       - application/json
       responses:
         "200":
-          description: Пользователь успешно зарегистрирован
+          description: OK
           schema:
-            $ref: '#/definitions/models.User'
-        "400":
-          description: Некорректные данные (пустое имя, email, короткий пароль, неверная
-            роль)
-          schema:
-            type: string
-        "409":
-          description: Пользователь уже существует
+            items:
+              $ref: '#/definitions/handlers.ActiveSessionResponse'
+            type: array
+        "403":
+          description: 'ошибка доступа к текущему запросу. необходима роль пользователя:
+            админ'
           schema:
             type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
             type: string
-      summary: Регистрация пользователя
+      security:
+      - BearerAuth: []
+      summary: Получение активных сессий
       tags:
-      - users
+      - sessions
   /session/end:
     post:
       consumes:
@@ -477,32 +476,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Начало сессии
-      tags:
-      - sessions
-  /sessions/active:
-    get:
-      description: Возвращает список всех активных сессий (только для администраторов)
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/handlers.ActiveSessionResponse'
-            type: array
-        "403":
-          description: 'ошибка доступа к текущему запросу. необходима роль пользователя:
-            админ'
-          schema:
-            type: string
-        "500":
-          description: Внутренняя ошибка сервера
-          schema:
-            type: string
-      security:
-      - BearerAuth: []
-      summary: Получение активных сессий
       tags:
       - sessions
   /tariff:
@@ -613,6 +586,33 @@ paths:
       security:
       - BearerAuth: []
       summary: Получение пользователя по ID
+      tags:
+      - users
+  /users/info:
+    get:
+      description: Возвращает информацию о пользователе, баланс и транзакции
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.UserInfoResponse'
+        "400":
+          description: Некорректный user_id
+          schema:
+            type: string
+        "401":
+          description: Кошелек не найден или пользователь
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получение информации о пользователе
       tags:
       - users
 swagger: "2.0"

@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"computer-club/internal/middleware"
-	"computer-club/internal/repository/models"
+	"computer-club/internal/models"
 	"computer-club/internal/usecase"
 	"computer-club/pkg/errors"
 	"encoding/json"
@@ -13,21 +13,18 @@ import (
 )
 
 type UserHandler interface {
-	RegisterUser(w http.ResponseWriter, r *http.Request)
-	LoginUser(w http.ResponseWriter, r *http.Request)
 	InfoUser(w http.ResponseWriter, r *http.Request)
 	GetUsers(w http.ResponseWriter, r *http.Request)
 	GetUserByID(w http.ResponseWriter, r *http.Request)
 }
 
 type userHandler struct {
-	userService   usecase.UserService
-	walletService usecase.WalletService
-	log           *logrus.Logger
+	userService usecase.UserService
+	log         *logrus.Logger
 }
 
-func NewUserHandler(userService usecase.UserService, walletService usecase.WalletService, log *logrus.Logger) UserHandler {
-	return &userHandler{userService: userService, walletService: walletService, log: log}
+func NewUserHandler(userService usecase.UserService, log *logrus.Logger) UserHandler {
+	return &userHandler{userService: userService, log: log}
 }
 
 type UserInfoResponse struct {
@@ -47,7 +44,7 @@ type UserInfoResponse struct {
 // @Failure      400 {object} string "Некорректный user_id"
 // @Failure      401 {object} string "Кошелек не найден или пользователь"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
-// @Router       /info [get]
+// @Router       /users/info [get]
 func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение информации о пользователе")
@@ -84,119 +81,6 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
-		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
-	}
-}
-
-type RegisterUserRequest struct {
-	Email    string `json:"email" example:"ivan@example.com"`
-	Password string `json:"password" example:"secret123"`
-	Role     string `json:"role" example:"customer"`
-}
-
-// RegisterUser godoc
-// @Summary      Регистрация пользователя
-// @Description  Создает нового пользователя с указанными данными
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Param        request body RegisterUserRequest true "Данные для регистрации"
-// @Success      200 {object} models.User "Пользователь успешно зарегистрирован"
-// @Failure      400 {object} string "Некорректные данные (пустое имя, email, короткий пароль, неверная роль)"
-// @Failure      409 {object} string "Пользователь уже существует"
-// @Failure      500 {object} string "Внутренняя ошибка сервера"
-// @Router       /register [post]
-func (h userHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	h.log.Info("Запрос на регистрацию пользователя")
-
-	var req RegisterUserRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.log.WithError(err).Error("Ошибка декодирования JSON")
-		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
-		return
-	}
-	defer r.Body.Close()
-
-	role := models.UserRole(req.Role)
-	if role != models.Admin && role != models.Customer {
-		h.log.WithField("role", req.Role).Error("Неверная роль")
-		middleware.WriteError(w, http.StatusBadRequest, errors.ErrInvalidRole.Error())
-		return
-	}
-
-	user, err := h.userService.RegisterUser(ctx, req.Email, req.Password, role)
-	if err != nil {
-		switch err {
-		case errors.ErrHashedPassword, errors.ErrRegistration:
-			middleware.WriteError(w, http.StatusInternalServerError, err.Error())
-		case errors.ErrUserAlreadyExists, errors.ErrUsernameTaken:
-			middleware.WriteError(w, http.StatusConflict, err.Error())
-		case errors.ErrNameEmpty, errors.ErrEmailEmpty, errors.ErrPasswordEmpty, errors.ErrPasswordTooShort:
-			middleware.WriteError(w, http.StatusBadRequest, err.Error())
-		default:
-			middleware.WriteError(w, http.StatusInternalServerError, errors.ErrUnexpected.Error())
-		}
-		h.log.WithError(err).Error("Ошибка при регистрации пользователя")
-		return
-	}
-
-	h.log.WithFields(logrus.Fields{
-		"user_id": user.ID,
-		"name":    user.Name,
-		"role":    user.Role,
-	}).Info("Пользователь зарегистрирован")
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(user); err != nil {
-		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
-		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
-	}
-}
-
-type LoginRequest struct {
-	Email    string `json:"email" example:"user@example.com"`
-	Password string `json:"password" example:"secret"`
-}
-
-type LoginResponse struct {
-	Token string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-}
-
-// LoginUser godoc
-// @Summary      Авторизация пользователя
-// @Description  Проверяет email и пароль, возвращает JWT-токен
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Param        request body LoginRequest true "Данные для входа"
-// @Success      200 {object} LoginResponse "Успешный вход"
-// @Failure      400 {object} string "Некорректный запрос (невалидный JSON)"
-// @Failure      401 {object} string "Ошибка авторизации - неверный email или пароль"
-// @Failure      500 {object} string "Внутренняя ошибка сервера"
-// @Router       /login [post]
-func (h userHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		middleware.WriteError(w, http.StatusBadRequest, errors.ErrJSONRequest.Error())
-		return
-	}
-	defer r.Body.Close()
-
-	token, err := h.userService.LoginUser(ctx, req.Email, req.Password)
-	if err != nil {
-		middleware.WriteError(w, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(map[string]string{"token": token}); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
 	}

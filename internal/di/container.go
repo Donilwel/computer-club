@@ -22,6 +22,7 @@ type Container struct {
 	Log             *logrus.Logger
 	DB              *gorm.DB
 	RedisClient     *redis.Client
+	AuthHandler     handlers.AuthHandler
 	UserHandler     handlers.UserHandler
 	SessionHandler  handlers.SessionHandler
 	ComputerHandler handlers.ComputerHandler
@@ -32,6 +33,7 @@ type Container struct {
 	ComputerRepo    repository.ComputerRepository
 	TariffRepo      repository.TariffRepository
 	WalletRepo      repository.WalletRepository
+	AuthUsecase     usecase.AuthService
 	UserUsecase     usecase.UserService
 	SessionUsecase  usecase.SessionService
 	ComputerUsecase usecase.ComputerService
@@ -58,6 +60,7 @@ func NewContainer() *Container {
 	walletRepo := repository.NewPostgresWalletRepo(db)
 
 	// Инициализация usecase'ов
+	authUsecase := usecase.NewAuthUsecase(userRepo, walletRepo)
 	tariffUsecase := usecase.NewTariffUsecase(tariffRepo)
 	walletUsecase := usecase.NewWalletUsecase(walletRepo, tariffUsecase, userRepo)
 	userUsecase := usecase.NewUserUsecase(userRepo, walletRepo)
@@ -65,7 +68,8 @@ func NewContainer() *Container {
 	computerUsecase := usecase.NewComputerUsecase(computerRepo)
 
 	// Инициализация хендлеров
-	userHandler := handlers.NewUserHandler(userUsecase, walletUsecase, log) // Добавили log
+	authHandler := handlers.NewAuthHandler(authUsecase, log)
+	userHandler := handlers.NewUserHandler(userUsecase, log)
 	sessionHandler := handlers.NewSessionHandler(sessionUsecase, log)
 	tariffHandler := handlers.NewTariffHandler(tariffUsecase, log)
 	walletHandler := handlers.NewWalletHandler(walletUsecase, log)
@@ -77,7 +81,7 @@ func NewContainer() *Container {
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	// Регистрация маршрутов
-	httpService.RegisterRoutes(r, userHandler, tariffHandler, sessionHandler, walletHandler, computerHandler)
+	httpService.RegisterRoutes(r, userHandler, tariffHandler, sessionHandler, walletHandler, computerHandler, authHandler)
 
 	return &Container{
 		Cfg:             cfg,
@@ -89,6 +93,7 @@ func NewContainer() *Container {
 		ComputerRepo:    computerRepo,
 		TariffRepo:      tariffRepo,
 		WalletRepo:      walletRepo,
+		AuthUsecase:     authUsecase,
 		UserUsecase:     userUsecase,
 		SessionUsecase:  sessionUsecase,
 		ComputerUsecase: computerUsecase,

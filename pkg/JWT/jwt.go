@@ -1,7 +1,7 @@
 package JWT
 
 import (
-	"computer-club/internal/repository/models"
+	"computer-club/internal/models"
 	"github.com/golang-jwt/jwt/v4"
 	"os"
 	"time"
