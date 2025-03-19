@@ -45,7 +45,7 @@ type UserInfoResponse struct {
 // @Failure      401 {object} string "Кошелек не найден или пользователь"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
 // @Router       /users/info [get]
-func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение информации о пользователе")
 
@@ -97,7 +97,7 @@ func (h userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 // @Failure		 404 {object} string "Список пользователей пуст"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
 // @Router 		/users [get]
-func (h userHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение списка пользователей")
 
@@ -142,7 +142,7 @@ func (h userHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 // @Failure		 404 {object} string "Пользователь не найден"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
 // @Router 		/users/{id} [get]
-func (h userHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	role, ok := r.Context().Value("role").(string)

@@ -20,12 +20,13 @@ var nouns = []string{
 	"Raven", "Bison", "Scorpion", "Viper", "Bear", "Fox", "Whale",
 }
 
+var randGen = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func GenerateUsername(db *gorm.DB) string {
-	rand.New(rand.NewSource(time.Now().UnixNano()))
 	for {
-		adj := adjectives[rand.Intn(len(adjectives))]
-		noun := nouns[rand.Intn(len(nouns))]
-		number := rand.Intn(9000) + 1000
+		adj := adjectives[randGen.Intn(len(adjectives))]
+		noun := nouns[randGen.Intn(len(nouns))]
+		number := randGen.Intn(9000) + 1000
 		username := fmt.Sprintf("%s%s%d", adj, noun, number)
 
 		var count int64

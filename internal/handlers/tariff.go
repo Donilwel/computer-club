@@ -36,7 +36,7 @@ func NewTariffHandler(tariffService usecase.TariffService, log *logrus.Logger) T
 // @Success      200 {array} models.Tariff
 // @Failure      500 {object} string "ошибка при поиске тарифов в базе данных"
 // @Router       /tariff [get]
-func (h tariffHandler) GetTariff(w http.ResponseWriter, r *http.Request) {
+func (h *tariffHandler) GetTariff(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение списка тарифов")
 	tariffs, err := h.tariffService.GetTariff(ctx)
@@ -67,7 +67,7 @@ func (h tariffHandler) GetTariff(w http.ResponseWriter, r *http.Request) {
 // @Failure      404 {object} string "тариф не найден"
 // @Failure      500 {object} string "внутренняя ошибка сервера"
 // @Router       /tariff/{id} [get]
-func (h tariffHandler) GetTariffByID(w http.ResponseWriter, r *http.Request) {
+func (h *tariffHandler) GetTariffByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	idStr := chi.URLParam(r, "id")
 
@@ -96,10 +96,10 @@ func (h tariffHandler) GetTariffByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h tariffHandler) ChangeTariff(w http.ResponseWriter, r *http.Request) {
+func (h *tariffHandler) ChangeTariff(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h tariffHandler) AddTariff(w http.ResponseWriter, r *http.Request) {}
+func (h *tariffHandler) AddTariff(w http.ResponseWriter, r *http.Request) {}
 
-func (h tariffHandler) DeleteTariff(w http.ResponseWriter, r *http.Request) {}
+func (h *tariffHandler) DeleteTariff(w http.ResponseWriter, r *http.Request) {}

@@ -41,7 +41,7 @@ func (s *Server) Run() {
 			select {
 			case <-ticker.C:
 				s.container.Log.Info("Проверяем просроченные сессии...")
-				s.container.SessionUsecase.CheckExpiredSessions(context.Background())
+				s.container.SessionUsecase.CheckExpiredSessions(ctx)
 			case <-ctx.Done():
 				s.container.Log.Info("Остановка фоновой проверки сессий...")
 				return

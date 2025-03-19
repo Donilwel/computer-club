@@ -1,110 +1,111 @@
-package handlers_test
+package httpService_test
 
 import (
 	"bytes"
+	"computer-club/internal/handlers"
+	"computer-club/internal/models"
+	"computer-club/pkg/errors"
+	"context"
 	"encoding/json"
-	"log"
+	"github.com/go-chi/chi/v5"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
-	"time"
-
-	"computer-club/internal/di"
-	"computer-club/internal/repository/models"
-	_ "github.com/lib/pq"
-	"github.com/ory/dockertest/v3"
-	"github.com/stretchr/testify/assert"
 )
 
-var container *di.Container
+// Подготовка мок-сервиса для регистрации
+type mockAuthService struct{}
 
-func TestMain(m *testing.M) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		log.Fatalf("Could not connect to Docker: %v", err)
+func (m *mockAuthService) Register(ctx context.Context, email, password string, role models.UserRole) (*models.User, error) {
+	if email == "test@example.com" {
+		return nil, errors.ErrUserAlreadyExists
 	}
-
-	resource, err := pool.Run("postgres", "latest", []string{
-		"POSTGRES_USER=test",
-		"POSTGRES_PASSWORD=test",
-		"POSTGRES_DB=testdb",
-	})
-	if err != nil {
-		log.Fatalf("Could not start resource: %v", err)
-	}
-
-	// Ждем, пока БД станет доступной
-	time.Sleep(time.Second * 5)
-
-	container = di.NewContainer()
-	if container == nil {
-		log.Fatal("Failed to initialize DI container")
-	}
-	if container.DB == nil {
-		log.Fatal("Database connection is nil")
-	}
-	if container.UserHandler == nil {
-		log.Fatal("UserHandler is nil")
-	}
-
-	code := m.Run()
-
-	if err := pool.Purge(resource); err != nil {
-		log.Fatalf("Could not purge resource: %v", err)
-	}
-	os.Exit(code)
+	return &models.User{ID: 1, Email: email, Role: string(role)}, nil
 }
 
-func resetDatabase() {
-	if container.DB == nil {
-		log.Fatal("DB is nil in resetDatabase")
+func (m *mockAuthService) Login(ctx context.Context, email, password string) (string, error) {
+	return "token", nil
+}
+
+func TestRegister(t *testing.T) {
+	tests := []struct {
+		name           string
+		requestBody    map[string]string
+		expectedStatus int
+		expectedBody   map[string]interface{}
+	}{
+		{
+			name: "User already exists",
+			requestBody: map[string]string{
+				"email":    "test@example.com",
+				"password": "password123",
+				"role":     "customer",
+			},
+			expectedStatus: http.StatusConflict,
+			expectedBody:   map[string]interface{}{"error": "Пользователь уже существует"},
+		},
+		{
+			name: "Successful registration",
+			requestBody: map[string]string{
+				"email":    "newuser@example.com",
+				"password": "password123",
+				"role":     "customer",
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   map[string]interface{}{"id": float64(1), "email": "newuser@example.com", "role": "customer"},
+		},
+		{
+			name: "Missing email",
+			requestBody: map[string]string{
+				"email":    "",
+				"password": "password123",
+				"role":     "customer",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   map[string]interface{}{"error": "Некорректные данные (пустое имя, email, короткий пароль, неверная роль)"},
+		},
+		{
+			name: "Invalid role",
+			requestBody: map[string]string{
+				"email":    "invalidrole@example.com",
+				"password": "password123",
+				"role":     "invalidrole",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   map[string]interface{}{"error": "некорректная роль"},
+		},
 	}
-	container.DB.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
-}
 
-func TestRegisterUser_Success(t *testing.T) {
-	resetDatabase()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := chi.NewRouter()
+			log := logrus.New()
+			authHandler := handlers.NewAuthHandler(&mockAuthService{}, log)
+			r.Post("/auth/register", authHandler.Register)
 
-	body, _ := json.Marshal(map[string]string{
-		"name":     "Test User",
-		"email":    "test@example.com",
-		"password": "password",
-		"role":     "customer",
-	})
+			// Подготовка запроса
+			body, _ := json.Marshal(tt.requestBody)
+			req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
 
-	r := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
-	w := httptest.NewRecorder()
-	container.UserHandler.RegisterUser(w, r)
+			// Ответ
+			w := httptest.NewRecorder()
 
-	res := w.Result()
-	defer res.Body.Close()
+			// Выполнение запроса
+			r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-	var respUser models.User
-	json.NewDecoder(res.Body).Decode(&respUser)
-	assert.Equal(t, "Test User", respUser.Name)
-	assert.Equal(t, "test@example.com", respUser.Email)
-}
+			// Проверка статуса ответа
+			assert.Equal(t, tt.expectedStatus, w.Code)
 
-func TestLoginUser_Success(t *testing.T) {
-	resetDatabase()
-	TestRegisterUser_Success(t)
+			// Проверка тела ответа
+			var response map[string]interface{}
+			err := json.NewDecoder(w.Body).Decode(&response)
+			assert.Nil(t, err)
 
-	body, _ := json.Marshal(map[string]string{
-		"email":    "test@example.com",
-		"password": "password",
-	})
-
-	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
-	w := httptest.NewRecorder()
-	container.UserHandler.LoginUser(w, r)
-
-	res := w.Result()
-	defer res.Body.Close()
-
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-	var resp map[string]string
-	json.NewDecoder(res.Body).Decode(&resp)
-	assert.NotEmpty(t, resp["token"])
+			// Сравнение с ожидаемым ответом
+			assert.Equal(t, tt.expectedBody, response)
+		})
+	}
 }

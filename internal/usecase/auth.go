@@ -19,7 +19,7 @@ type AuthUsecase struct {
 	walletRepo repository.WalletRepository
 }
 
-func (u AuthUsecase) Register(ctx context.Context, email, password string, role models.UserRole) (*models.User, error) {
+func (u *AuthUsecase) Register(ctx context.Context, email, password string, role models.UserRole) (*models.User, error) {
 	// Проверки на пустые поля
 	if email == "" {
 		return nil, errors.ErrEmailEmpty
@@ -77,7 +77,7 @@ func (u AuthUsecase) Register(ctx context.Context, email, password string, role 
 	return user, nil
 }
 
-func (u AuthUsecase) Login(ctx context.Context, email string, password string) (string, error) {
+func (u *AuthUsecase) Login(ctx context.Context, email string, password string) (string, error) {
 	user, err := u.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return "", err

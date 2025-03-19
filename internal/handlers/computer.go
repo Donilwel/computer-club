@@ -40,7 +40,7 @@ func NewComputerHandler(computerService usecase.ComputerService, log *logrus.Log
 // @Failure      403 {object} string "Ошибка доступа - недостаточно прав"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
 // @Router       /computers [get]
-func (h computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
+func (h *computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение статуса компьютеров")
 
@@ -82,7 +82,7 @@ func (h computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Reque
 // @Failure		 409 {object} string "Компьютер занят"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
 // @Router       /computers/{id} [delete]
-func (h computerHandler) DeleteComputer(w http.ResponseWriter, r *http.Request) {
+func (h *computerHandler) DeleteComputer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	role, ok := ctx.Value("role").(string)
 	if !ok || role != string(models.Admin) {
@@ -134,7 +134,7 @@ func (h computerHandler) DeleteComputer(w http.ResponseWriter, r *http.Request) 
 // @Failure      403 {object} string "Ошибка доступа - недостаточно прав"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
 // @Router       /computers [post]
-func (h computerHandler) AddComputer(w http.ResponseWriter, r *http.Request) {
+func (h *computerHandler) AddComputer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Добавление компьютера")
 	role, ok := ctx.Value("role").(string)

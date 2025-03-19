@@ -18,6 +18,10 @@ type PostgresComputerRepo struct {
 	db *gorm.DB
 }
 
+func NewComputerRepository(db *gorm.DB) ComputerRepository {
+	return &PostgresComputerRepo{db: db}
+}
+
 func (r *PostgresComputerRepo) GetComputerByID(ctx context.Context, id int) (*models.Computer, error) {
 	var computer models.Computer
 	err := r.db.WithContext(ctx).First(&computer, "pc_number = ?", id).Error
@@ -25,10 +29,6 @@ func (r *PostgresComputerRepo) GetComputerByID(ctx context.Context, id int) (*mo
 		return nil, errors.ErrComputerNotFound
 	}
 	return &computer, nil
-}
-
-func NewComputerRepository(db *gorm.DB) ComputerRepository {
-	return &PostgresComputerRepo{db: db}
 }
 
 func (r *PostgresComputerRepo) GetComputers(ctx context.Context) ([]*models.Computer, error) {
