@@ -4,6 +4,7 @@ import (
 	"computer-club/internal/models"
 	"computer-club/internal/repository"
 	"context"
+	"sync"
 )
 
 type UserService interface {
@@ -33,15 +34,42 @@ func (u *UserUsecase) GetInfoUser(ctx context.Context, userID int64) (*models.Us
 		return nil, 0.0, nil, err
 	}
 
-	balance, err := u.walletRepo.GetBalance(ctx, userID)
-	if err != nil {
-		return nil, 0.0, nil, err
+	var (
+		balance      float64
+		transactions []*models.Transaction
+		wg           sync.WaitGroup
+		errCh        = make(chan error, 2)
+	)
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		var err error
+		balance, err = u.walletRepo.GetBalance(ctx, userID)
+		if err != nil {
+			errCh <- err
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		var err error
+		transactions, err = u.walletRepo.GetTransactions(ctx, userID)
+		if err != nil {
+			errCh <- err
+		}
+	}()
+
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		if err != nil {
+			return nil, 0.0, nil, err
+		}
 	}
 
-	transactions, err := u.walletRepo.GetTransactions(ctx, userID)
-	if err != nil {
-		return nil, 0.0, nil, err
-	}
 	return user, balance, transactions, nil
 }
 
