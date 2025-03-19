@@ -5,6 +5,7 @@ import (
 	"computer-club/pkg/errors"
 	"context"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ComputerRepository interface {
@@ -49,10 +50,18 @@ func (r *PostgresComputerRepo) ChangeComputerStatus(ctx context.Context, tx Tran
 		return errors.ErrWrongComputerStatus
 	}
 
-	err := db.WithContext(ctx).Model(computer).Updates(models.Computer{Status: models.ComputerStatus(status)}).Error
+	err := db.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("id = ?", computer.ID).
+		First(computer).Error
+	if err != nil {
+		return errors.ErrComputerNotFound
+	}
+
+	err = db.Model(computer).Update("status", models.ComputerStatus(status)).Error
 	if err != nil {
 		return errors.ErrUpdateComputerStatus
 	}
+
 	return nil
 }
 

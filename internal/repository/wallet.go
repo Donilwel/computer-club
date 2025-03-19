@@ -5,6 +5,7 @@ import (
 	"computer-club/pkg/errors"
 	"context"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type WalletRepository interface {
@@ -60,8 +61,16 @@ func (r *PostgresWalletRepo) Deposit(ctx context.Context, tx Transaction, userID
 	if tx != nil {
 		db = tx.DB()
 	}
-	err := db.WithContext(ctx).
-		Model(&models.Wallet{}).
+	var wallet models.Wallet
+	err := db.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("user_id = ?", userID).
+		First(&wallet).Error
+	if err != nil {
+		return errors.ErrUnexpected
+	}
+
+	err = db.WithContext(ctx).
+		Model(&wallet).
 		Where("user_id = ?", userID).
 		Update("balance", gorm.Expr("balance + ?", amount)).Error
 	if err != nil {
@@ -75,7 +84,14 @@ func (r *PostgresWalletRepo) Withdraw(ctx context.Context, tx Transaction, userI
 	if tx != nil {
 		db = tx.DB()
 	}
-	err := db.WithContext(ctx).Model(&models.Wallet{}).
+	var wallet models.Wallet
+	err := db.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("user_id = ?", userID).
+		First(&wallet).Error
+	if err != nil {
+		return errors.ErrUnexpected
+	}
+	err = db.WithContext(ctx).Model(&wallet).
 		Where("user_id = ? AND balance >= ?", userID, amount).
 		Update("balance", gorm.Expr("balance - ?", amount)).Error
 	if err != nil {
