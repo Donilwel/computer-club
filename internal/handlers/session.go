@@ -159,21 +159,13 @@ func (h *sessionHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type ActiveSessionResponse struct {
-	SessionID int64  `json:"session_id" example:"123"`
-	UserID    int64  `json:"user_id" example:"456"`
-	PCNumber  int    `json:"pc_number" example:"7"`
-	TariffID  int64  `json:"tariff_id" example:"3"`
-	Status    string `json:"status" example:"active"`
-}
-
 // GetActiveSessions godoc
 // @Summary      Получение активных сессий
 // @Description  Возвращает список всех активных сессий (только для администраторов)
 // @Tags         sessions
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200 {array} ActiveSessionResponse
+// @Success      200 {array} models.Session
 // @Failure      403 {object} string "ошибка доступа к текущему запросу. необходима роль пользователя: админ"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
 // @Router       /session/active [get]

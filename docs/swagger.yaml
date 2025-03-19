@@ -1,23 +1,5 @@
 basePath: /
 definitions:
-  handlers.ActiveSessionResponse:
-    properties:
-      pc_number:
-        example: 7
-        type: integer
-      session_id:
-        example: 123
-        type: integer
-      status:
-        example: active
-        type: string
-      tariff_id:
-        example: 3
-        type: integer
-      user_id:
-        example: 456
-        type: integer
-    type: object
   handlers.EndSessionRequest:
     properties:
       session_id:
@@ -375,7 +357,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/handlers.ActiveSessionResponse'
+              $ref: '#/definitions/models.Session'
             type: array
         "403":
           description: 'ошибка доступа к текущему запросу. необходима роль пользователя:

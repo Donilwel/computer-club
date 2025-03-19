@@ -32,7 +32,6 @@ func NewServer() *Server {
 func (s *Server) Run() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
@@ -48,7 +47,6 @@ func (s *Server) Run() {
 			}
 		}
 	}()
-
 	go func() {
 		fmt.Println("HTTP сервер запущен на порту:", s.container.Cfg.Server.HTTPPort)
 		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {

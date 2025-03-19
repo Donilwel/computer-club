@@ -333,7 +333,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.ActiveSessionResponse"
+                                "$ref": "#/definitions/models.Session"
                             }
                         }
                     },
@@ -700,31 +700,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handlers.ActiveSessionResponse": {
-            "type": "object",
-            "properties": {
-                "pc_number": {
-                    "type": "integer",
-                    "example": 7
-                },
-                "session_id": {
-                    "type": "integer",
-                    "example": 123
-                },
-                "status": {
-                    "type": "string",
-                    "example": "active"
-                },
-                "tariff_id": {
-                    "type": "integer",
-                    "example": 3
-                },
-                "user_id": {
-                    "type": "integer",
-                    "example": 456
-                }
-            }
-        },
         "handlers.EndSessionRequest": {
             "type": "object",
             "properties": {
