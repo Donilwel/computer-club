@@ -42,7 +42,7 @@ type PutMoneyReq struct {
 // @Failure      404 {object} string "Пользователь не найден"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
 // @Router       /pay [put]
-func (h walletHandler) PutMoneyOnWallet(w http.ResponseWriter, r *http.Request) {
+func (h *walletHandler) PutMoneyOnWallet(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на отправку средств на счет игрока")
 

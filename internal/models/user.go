@@ -10,11 +10,9 @@ const (
 
 // User - модель пользователя
 type User struct {
-	ID       int64     `json:"id" gorm:"primaryKey"`
-	Name     string    `json:"name"`
-	Role     string    `json:"role"`
-	Email    string    `json:"email"`
-	Password string    `json:"-"`                                                       // Скрываем в JSON
-	Wallet   Wallet    `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;" json:"-"` // Связь один-к-одному
-	Sessions []Session `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;" json:"-"` // Связь сессий с пользователем
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	Role     string `json:"role"`
+	Email    string `json:"email"`
+	Password string `json:"-"`
 }

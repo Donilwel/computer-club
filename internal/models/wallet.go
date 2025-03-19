@@ -1,7 +1,7 @@
 package models
 
 type Wallet struct {
-	ID      int64   `json:"id" gorm:"primaryKey"`
-	UserID  int64   `json:"user_id" gorm:"index;unique"` // Внешний ключ
+	ID      int64   `json:"id"`
+	UserID  int64   `json:"user_id"`
 	Balance float64 `json:"balance"`
 }

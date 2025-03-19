@@ -22,7 +22,7 @@ type sessionHandler struct {
 }
 
 func NewSessionHandler(sessionService usecase.SessionService, log *logrus.Logger) SessionHandler {
-	return sessionHandler{sessionService: sessionService, log: log}
+	return &sessionHandler{sessionService: sessionService, log: log}
 }
 
 type StartSessionReq struct {
@@ -45,7 +45,7 @@ type StartSessionReq struct {
 // @Failure      409 {object} string "Сессия уже активная или компьютер занят"
 // @Failure      500 {object} string "внутренняя проблема поиска в базе данных или ошибка сохранения изменения транзакции базы данных или редис не создал данные"
 // @Router       /session/start [post]
-func (h sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
+func (h *sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на начало сессии")
 
@@ -114,7 +114,7 @@ type EndSessionRequest struct {
 // @Failure      404 {object} string "Сессия или компьютер не найдены"
 // @Failure      500 {object} string "Внутренняя ошибка сервера при закрытии сессии или транзакции базы данных или редис не удалил данные"
 // @Router       /session/end [post]
-func (h sessionHandler) EndSession(w http.ResponseWriter, r *http.Request) {
+func (h *sessionHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на завершение сессии")
 
@@ -177,7 +177,7 @@ type ActiveSessionResponse struct {
 // @Failure      403 {object} string "ошибка доступа к текущему запросу. необходима роль пользователя: админ"
 // @Failure      500 {object} string "Внутренняя ошибка сервера"
 // @Router       /session/active [get]
-func (h sessionHandler) GetActiveSessions(w http.ResponseWriter, r *http.Request) {
+func (h *sessionHandler) GetActiveSessions(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение активных сессий")
 

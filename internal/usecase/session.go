@@ -6,6 +6,7 @@ import (
 	"computer-club/pkg/errors"
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -165,10 +166,10 @@ func (u *SessionUsecase) CheckExpiredSessions(ctx context.Context) {
 
 	for _, session := range sessions {
 		if session.EndTime != nil && session.EndTime.Before(now) {
-			fmt.Printf("Сессия %d просрочена, завершаем...\n", session.ID)
+			logrus.Print(fmt.Sprintf("Сессия %d просрочена, завершаем...\n", session.ID))
 			err := u.EndSession(ctx, session.ID)
 			if err != nil {
-				fmt.Printf("Ошибка при завершении сессии %d: %v\n", session.ID, err)
+				logrus.Print(fmt.Sprintf("Ошибка при завершении сессии %d: %v\n", session.ID, err))
 			}
 		}
 	}

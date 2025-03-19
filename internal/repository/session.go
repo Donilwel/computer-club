@@ -101,7 +101,6 @@ func (r *PostgresSessionRepo) CreateSession(ctx context.Context, tx Transaction,
 	if tx != nil {
 		db = tx.DB()
 	}
-
 	if tariff == nil {
 		return nil, errors.ErrTariffNotFound
 	}
