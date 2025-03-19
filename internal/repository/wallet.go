@@ -62,7 +62,7 @@ func (r *PostgresWalletRepo) Deposit(ctx context.Context, tx Transaction, userID
 		db = tx.DB()
 	}
 	var wallet models.Wallet
-	err := db.Clauses(clause.Locking{Strength: "UPDATE"}).
+	err := db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).
 		Where("user_id = ?", userID).
 		First(&wallet).Error
 	if err != nil {
@@ -85,7 +85,7 @@ func (r *PostgresWalletRepo) Withdraw(ctx context.Context, tx Transaction, userI
 		db = tx.DB()
 	}
 	var wallet models.Wallet
-	err := db.Clauses(clause.Locking{Strength: "UPDATE"}).
+	err := db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).
 		Where("user_id = ?", userID).
 		First(&wallet).Error
 	if err != nil {
