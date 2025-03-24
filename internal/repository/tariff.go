@@ -10,6 +10,8 @@ import (
 type TariffRepository interface {
 	GetTariff(ctx context.Context) ([]models.Tariff, error)
 	GetTariffByID(ctx context.Context, id int64) (*models.Tariff, error)
+	DeleteTariffByID(ctx context.Context, tariff *models.Tariff) error
+	CreateTariff(context.Context, *models.Tariff) (*models.Tariff, error)
 }
 
 type TariffRepositoryPostgres struct {
@@ -36,4 +38,19 @@ func (r *TariffRepositoryPostgres) GetTariffByID(ctx context.Context, id int64) 
 		return nil, errors.ErrFindTariffByID
 	}
 	return &tariff, nil
+}
+
+func (r *TariffRepositoryPostgres) CreateTariff(ctx context.Context, tariff *models.Tariff) (*models.Tariff, error) {
+	err := r.db.WithContext(ctx).Create(tariff).Error
+	if err != nil {
+		return nil, errors.ErrCreateTariff
+	}
+	return tariff, nil
+}
+
+func (r *TariffRepositoryPostgres) DeleteTariffByID(ctx context.Context, tariff *models.Tariff) error {
+	if err := r.db.WithContext(ctx).Delete(tariff).Error; err != nil {
+		return errors.ErrDeleteTariff
+	}
+	return nil
 }

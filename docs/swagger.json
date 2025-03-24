@@ -505,6 +505,62 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "description": "Создает новый тариф с указанными данными (доступен для администратора)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tariffs"
+                ],
+                "summary": "Создание нового тарифа",
+                "parameters": [
+                    {
+                        "description": "Данные для тарифа",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TariffBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Тариф успешно создан",
+                        "schema": {
+                            "$ref": "#/definitions/models.Tariff"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные данные (пустое имя, отрицательный айди или цена или длительность)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Недостаточно прав: нужен пользователь с ролью админ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "Айди тарифа уже используется",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/tariff/{id}": {
@@ -547,6 +603,53 @@
                     },
                     "500": {
                         "description": "внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "удаление Тарифа из базы данных (доступно для админа)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tariffs"
+                ],
+                "summary": "удаление Тарифа",
+                "responses": {
+                    "200": {
+                        "description": ": \"тариф успешно удален",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный ID тарифа",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Ошибка доступа - недостаточно прав",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Тариф не найден",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "type": "string"
                         }
@@ -761,6 +864,27 @@
                 },
                 "tariff_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.TariffBody": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Free"
+                },
+                "price": {
+                    "type": "number",
+                    "example": 0
+                },
+                "tariff_id": {
+                    "type": "integer",
+                    "example": 123
                 }
             }
         },

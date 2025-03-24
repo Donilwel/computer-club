@@ -47,6 +47,21 @@ definitions:
       tariff_id:
         type: integer
     type: object
+  handlers.TariffBody:
+    properties:
+      duration:
+        example: 10
+        type: integer
+      name:
+        example: Free
+        type: string
+      price:
+        example: 0
+        type: number
+      tariff_id:
+        example: 123
+        type: integer
+    type: object
   handlers.UserInfoResponse:
     properties:
       balance:
@@ -479,7 +494,75 @@ paths:
       summary: Получение списка тарифов
       tags:
       - tariffs
+    post:
+      consumes:
+      - application/json
+      description: Создает новый тариф с указанными данными (доступен для администратора)
+      parameters:
+      - description: Данные для тарифа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TariffBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Тариф успешно создан
+          schema:
+            $ref: '#/definitions/models.Tariff'
+        "400":
+          description: Некорректные данные (пустое имя, отрицательный айди или цена
+            или длительность)
+          schema:
+            type: string
+        "403":
+          description: 'Недостаточно прав: нужен пользователь с ролью админ'
+          schema:
+            type: string
+        "409":
+          description: Айди тарифа уже используется
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Создание нового тарифа
+      tags:
+      - tariffs
   /tariff/{id}:
+    delete:
+      description: удаление Тарифа из базы данных (доступно для админа)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ': "тариф успешно удален'
+          schema:
+            type: string
+        "400":
+          description: Некорректный ID тарифа
+          schema:
+            type: string
+        "403":
+          description: Ошибка доступа - недостаточно прав
+          schema:
+            type: string
+        "404":
+          description: Тариф не найден
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: удаление Тарифа
+      tags:
+      - tariffs
     get:
       description: Возвращает информацию о тарифе по указанному ID
       parameters:

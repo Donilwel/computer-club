@@ -15,7 +15,7 @@ type User struct {
 	Role         string        `json:"role"`
 	Email        string        `json:"email"`
 	Password     string        `json:"-"`
-	Wallet       *Wallet       `json:"-" gorm:"constraint:OnDelete:CASCADE;foreignKey:UserID"` // Удаление кошелька при удалении пользователя
-	Sessions     []Session     `json:"-" gorm:"constraint:OnDelete:CASCADE;foreignKey:UserID"` // Удаление сессий
-	Transactions []Transaction `json:"-" gorm:"constraint:OnDelete:CASCADE;foreignKey:UserID"` // Удаление транзакций
+	Wallet       *Wallet       `json:"-" gorm:"constraint:OnDelete:CASCADE;foreignKey:UserID"`
+	Sessions     []Session     `json:"-" gorm:"constraint:OnDelete:CASCADE;foreignKey:UserID"`
+	Transactions []Transaction `json:"-" gorm:"constraint:OnDelete:CASCADE;foreignKey:UserID"`
 }

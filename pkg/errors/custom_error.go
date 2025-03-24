@@ -51,11 +51,15 @@ var (
 	ErrCreateComputer       = errors.New("ошибка при добавлении компьютера")
 
 	// Ошибки тарифов
-	ErrFindTariffByID  = errors.New("ошибка при поиске тарифа в базе данных по id")
-	ErrInvalidTariffID = errors.New("ошибка чтения тариф id")
-	ErrTariffNotFound  = errors.New("тариф не найден")
-	ErrFindTariffs     = errors.New("ошибка при поиске тарифов в базе данных")
-	ErrTariffsNotFound = errors.New("тарифы не найден")
+	ErrFindTariffByID           = errors.New("ошибка при поиске тарифа в базе данных по id")
+	ErrInvalidTariffID          = errors.New("ошибка чтения тариф id")
+	ErrTariffNotFound           = errors.New("тариф не найден")
+	ErrFindTariffs              = errors.New("ошибка при поиске тарифов в базе данных")
+	ErrTariffsNotFound          = errors.New("тарифы не найден")
+	ErrDeleteTariff             = errors.New("ошибка удаления тарифа")
+	ErrInvalidInputDataTariff   = errors.New("ошибка неверные данные тарифа")
+	ErrTariffWithIdAlreadyExist = errors.New("ошибка, id уже занято")
+	ErrCreateTariff             = errors.New("ошибка создания тарифа в базу данных")
 
 	// Ошибки транзакций и кошелька
 	ErrInvalidAmount       = errors.New("количество денег должно быть больше нуля")

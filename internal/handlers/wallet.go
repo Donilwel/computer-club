@@ -82,5 +82,6 @@ func (h *walletHandler) PutMoneyOnWallet(w http.ResponseWriter, r *http.Request)
 	if err := json.NewEncoder(w).Encode(transaction); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+		return
 	}
 }

@@ -66,6 +66,7 @@ func (h *computerHandler) GetComputersStatus(w http.ResponseWriter, r *http.Requ
 	if err := json.NewEncoder(w).Encode(computers); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+		return
 	}
 }
 
@@ -121,6 +122,7 @@ func (h *computerHandler) DeleteComputer(w http.ResponseWriter, r *http.Request)
 	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Компьютер успешно удален"}); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+		return
 	}
 }
 
@@ -156,5 +158,6 @@ func (h *computerHandler) AddComputer(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(computer); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+		return
 	}
 }

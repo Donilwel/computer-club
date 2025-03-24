@@ -25,9 +25,9 @@ func RegisterRoutes(
 	r.Group(func(protected chi.Router) {
 		protected.Use(middleware.AuthMiddleware)
 
-		//protected.Post("/tariff", tariffHandler.AddTariff)
+		protected.Post("/tariff", tariffHandler.AddTariff)
 		//protected.Put("/tariff/{id}", tariffHandler.ChangeTariff)
-		//protected.Delete("/tariff/{id}", tariffHandler.DeleteTariff)
+		protected.Delete("/tariff/{id}", tariffHandler.DeleteTariff)
 
 		protected.Get("/users", userHandler.GetUsers)
 		protected.Get("/users/{id}", userHandler.GetUserByID)

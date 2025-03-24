@@ -53,7 +53,6 @@ func (u *AuthUsecase) Register(ctx context.Context, email, password string, role
 		Password: string(hashedPassword),
 		Role:     string(role),
 	}
-
 	tx := u.userRepo.BeginTransaction(ctx)
 	defer tx.Rollback()
 

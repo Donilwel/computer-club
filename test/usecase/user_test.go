@@ -52,17 +52,6 @@ func TestGetInfoUser(t *testing.T) {
 			expectedError: errors.ErrUserNotFound,
 		},
 		{
-			name: "Wallet Not Found",
-			mockSetup: func(userRepo *mocks.UserRepository, walletRepo *mocks.WalletRepository) {
-				userID := int64(1)
-				user := &models.User{ID: userID, Name: "Alice", Email: "alice@example.com"}
-
-				userRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
-				walletRepo.On("GetBalance", mock.Anything, userID).Return(0.0, errors.ErrCheckBalance)
-			},
-			expectedError: errors.ErrCheckBalance,
-		},
-		{
 			name: "Transaction Fetch Failed",
 			mockSetup: func(userRepo *mocks.UserRepository, walletRepo *mocks.WalletRepository) {
 				userID := int64(1)

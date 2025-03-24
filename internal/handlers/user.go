@@ -83,6 +83,7 @@ func (h *userHandler) InfoUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+		return
 	}
 }
 
@@ -101,7 +102,7 @@ func (h *userHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на получение списка пользователей")
 
-	role, ok := r.Context().Value("role").(string)
+	role, ok := ctx.Value("role").(string)
 	if !ok || role != "admin" {
 		h.log.WithError(errors.ErrForbidden).Error("Ошибка при получении списка пользователей: недостаточно прав")
 		middleware.WriteError(w, http.StatusForbidden, errors.ErrForbidden.Error())
@@ -127,6 +128,7 @@ func (h *userHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(users); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+		return
 	}
 }
 
@@ -175,5 +177,6 @@ func (h *userHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+		return
 	}
 }

@@ -49,7 +49,7 @@ func (h *sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	h.log.Info("Запрос на начало сессии")
 
-	userID, ok := r.Context().Value("user_id").(int64)
+	userID, ok := ctx.Value("user_id").(int64)
 	if !ok {
 		h.log.Error("Ошибка: user_id не найден в контексте")
 		middleware.WriteError(w, http.StatusUnauthorized, errors.ErrWrongIDFromJWT.Error())
@@ -93,6 +93,7 @@ func (h *sessionHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(session); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+		return
 	}
 }
 
@@ -156,6 +157,7 @@ func (h *sessionHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Session ended successfully"}); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+		return
 	}
 }
 
@@ -173,7 +175,7 @@ func (h *sessionHandler) GetActiveSessions(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	h.log.Info("Запрос на получение активных сессий")
 
-	role, ok := r.Context().Value("role").(string)
+	role, ok := ctx.Value("role").(string)
 	if !ok || role != "admin" {
 		h.log.WithError(errors.ErrForbidden).Error("Ошибка при получении списка компьютеров: недостаточно прав")
 		middleware.WriteError(w, http.StatusForbidden, errors.ErrForbidden.Error())
@@ -189,5 +191,6 @@ func (h *sessionHandler) GetActiveSessions(w http.ResponseWriter, r *http.Reques
 	if err := json.NewEncoder(w).Encode(sessions); err != nil {
 		h.log.WithError(err).Error("Ошибка при кодировании ответа JSON")
 		middleware.WriteError(w, http.StatusInternalServerError, errors.ErrCodingaData.Error())
+		return
 	}
 }
